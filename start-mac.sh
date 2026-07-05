@@ -81,26 +81,26 @@ else
     log "虚拟环境已存在"
 fi
 
-# ─── 5. 安装依赖（首次或 --reinstall） ───
-if [[ ! -f "$VENV/.deps-installed" ]] || [[ "${1:-}" == "--reinstall" ]]; then
+# ─── 5. 安装依赖（检测 requirements 变化，变了就自动重装） ───
+REQS_HASH=$(cat backend/requirements.txt | shasum | awk '{print $1}')
+STAMP_HASH=$(cat "$VENV/.deps-installed" 2>/dev/null || echo "")
+
+if [[ "$REQS_HASH" != "$STAMP_HASH" ]] || [[ "${1:-}" == "--reinstall" ]]; then
     step "安装依赖（首次较慢，约 3-5 分钟）..."
     $PIP install --upgrade pip
-    # 基础依赖（FastAPI/uvicorn/httpx/docx 等）
     $PIP install -r backend/requirements.txt
-    # ASR + 纪要依赖（torch 自带 MPS 支持，funasr 含 ASR 全栈）
     $PIP install torch torchaudio
     $PIP install funasr modelscope librosa soundfile scipy scikit-learn
     $PIP install addict datasets simplejson
-    touch "$VENV/.deps-installed"
+    echo "$REQS_HASH" > "$VENV/.deps-installed"
     log "依赖安装完成"
 else
     log "依赖已安装（如需重装：./start-mac.sh --reinstall）"
 fi
 
 # ─── 6. 默认环境变量 ───
-export AHAMVOICE_ASR_DEVICE="$DEVICE"
+# 注意：ASR_DEVICE 的默认值在 source .env 之后再设，让 .env 能覆盖
 export AHAMVOICE_PORT="${AHAMVOICE_PORT:-8765}"
-# Mac 数据/模型目录默认放项目下
 export AHAMVOICE_HOME="${AHAMVOICE_HOME:-$(pwd)/data}"
 export AHAMVOICE_MODELS_DIR="${AHAMVOICE_MODELS_DIR:-$(pwd)/models}"
 
@@ -110,9 +110,10 @@ if [[ -f .env ]]; then
     set -a
     source .env 2>/dev/null || true
     set +a
-    # .env 可能覆盖了上面的，重新确保 device
-    export AHAMVOICE_ASR_DEVICE="$DEVICE"
 fi
+
+# ASR 设备：.env 里设了就用 .env 的（允许用户强制 cpu），否则用自动检测（mps/cpu）
+export AHAMVOICE_ASR_DEVICE="${AHAMVOICE_ASR_DEVICE:-$DEVICE}"
 
 # ─── 8. 启动 ───
 PORT="${AHAMVOICE_PORT:-8765}"

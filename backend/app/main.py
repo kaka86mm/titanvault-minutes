@@ -291,6 +291,7 @@ def upload_recording(
                 if written > max_bytes:
                     out.close()
                     target.unlink(missing_ok=True)
+                    file.file.close()
                     raise HTTPException(
                         status_code=413,
                         detail=f"upload exceeds {max_mb} MB limit (AHAMVOICE_UPLOAD_MAX_MB)",
@@ -392,6 +393,7 @@ def process_and_wait(
                 if written > env_int("AHAMVOICE_UPLOAD_MAX_MB", 2048, 16, 16384) * 1024 * 1024:
                     out.close()
                     target.unlink(missing_ok=True)
+                    file.file.close()
                     raise HTTPException(status_code=413, detail="upload exceeds limit")
                 out.write(chunk)
     except HTTPException:
