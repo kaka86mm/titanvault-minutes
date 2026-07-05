@@ -21,7 +21,7 @@
 
 ## 中文
 
-> 基于 [aham-voice](https://github.com/li599198347-svg/aham-voice)（MIT）改造。Mac 用户请用[原项目](https://github.com/li599198347-svg/aham-voice)（原生 MPS 加速）。
+> 基于 [aham-voice](https://github.com/li599198347-svg/aham-voice)（MIT，原项目已归档）改造。
 
 ### 为什么做
 
@@ -36,7 +36,7 @@
 | 维度 | 原版 aham-voice | 本项目 aham-voice-web |
 |---|---|---|
 | 🖥️ **形态** | macOS 桌面 app（pywebview 打包 `.app`） | **Web 应用**，浏览器访问，手机/平板同 Wi-Fi 可用 |
-| 💻 **平台 / GPU** | 仅 macOS · MPS | **Linux + Windows** · CUDA / **ROCm（AMD）** / CPU 三档 |
+| 💻 **平台 / GPU** | 仅 macOS · MPS | **Linux + Windows** · CUDA / **ROCm（AMD）** / CPU 三档；**Mac 原生 MPS** |
 | 🤖 **大模型** | 硬编码 DeepSeek | **任意 OpenAI 兼容端点**（DeepSeek / 通义 / Kimi / Ollama / vLLM） |
 | 🏷️ **热词** | 仅手工录入 / txt 导入 | + **LLM 智能发现**：转写后自动抽取候选词 → 批量审阅确认 |
 | 📝 **纪要** | 模板 + 改写 | + **热词规范名注入**、**智能分块**、**时间戳跳转音频**、**docx 导出** |
@@ -46,7 +46,7 @@
 | 🧪 **测试** | 无 | **pytest + 74 单测**（config / security / 热词发现 / docx / 方言纠错等） |
 | 🩺 **健壮性** | — | 中断任务自动恢复、ffmpeg 路径 fallback、错误信息脱敏 |
 
-> Mac 用户建议直接用[原项目](https://github.com/li599198347-svg/aham-voice)（原生 MPS 加速，体验更顺）。本项目面向 **Linux / Windows 服务器**。
+> Mac 用户可以用下方"Mac 原生部署"一键脚本（MPS GPU 加速），也可以用 Docker（仅 CPU）。
 
 ### 核心特性
 
@@ -67,8 +67,23 @@
 
 ### 快速开始
 
+#### Mac 用户（原生 MPS 加速，一键脚本）
+
 ```bash
-git clone <repo> aham-voice-web && cd aham-voice-web
+git clone https://github.com/kaka86mm/aham-voice-web.git
+cd aham-voice-web
+cp .env.example .env          # 填 LLM Key（纪要用）
+./start-mac.sh                # 首次自动装依赖+下模型，约 5-10 分钟
+```
+
+脚本自动完成：检查环境 → 装 ffmpeg → 创建 venv → 装依赖 → 启动（MPS GPU 加速）。后续运行直接 `./start-mac.sh`。
+
+浏览器打开 `http://localhost:8765`。
+
+#### Linux / Windows（Docker）
+
+```bash
+git clone https://github.com/kaka86mm/aham-voice-web.git && cd aham-voice-web
 cp .env.example .env          # 填密码 + LLM Key
 docker compose up -d          # 首次自动下载 ~4GB 模型
 ```
@@ -146,7 +161,7 @@ python -m pytest backend/tests/ -v
 
 | 平台 | 方案 | GPU |
 |---|---|---|
-| **Mac** | [原项目](https://github.com/li599198347-svg/aham-voice) | MPS ✅ |
+| **Mac** | 本项目一键脚本（`./start-mac.sh`）| MPS ✅ |
 | **Linux** | 本项目 Docker | CUDA / ROCm / CPU |
 | **Windows** | 本项目 Docker | CPU |
 
@@ -156,7 +171,7 @@ python -m pytest backend/tests/ -v
 
 ## English
 
-> Forked from [aham-voice](https://github.com/li599198347-svg/aham-voice) (MIT). Mac users should use the [original project](https://github.com/li599198347-svg/aham-voice) (native MPS acceleration).
+> Forked from [aham-voice](https://github.com/li599198347-svg/aham-voice) (MIT, original archived).
 
 ### Why
 
@@ -171,7 +186,7 @@ This project is forked from [aham-voice](https://github.com/li599198347-svg/aham
 | Dimension | Original aham-voice | This project aham-voice-web |
 |---|---|---|
 | 🖥️ **Form** | macOS desktop app (pywebview, packaged `.app`) | **Web app** — browser access, phone/tablet on same Wi-Fi |
-| 💻 **Platform / GPU** | macOS only · MPS | **Linux + Windows** · CUDA / **ROCm (AMD)** / CPU |
+| 💻 **Platform / GPU** | macOS only · MPS | **Linux + Windows** · CUDA / **ROCm (AMD)** / CPU; **Mac native MPS** |
 | 🤖 **LLM** | Hard-coded DeepSeek | **Any OpenAI-compatible endpoint** (DeepSeek / Qwen / Kimi / Ollama / vLLM) |
 | 🏷️ **Hotwords** | Manual entry / txt import only | + **Smart LLM discovery**: auto-extract candidates post-transcription → batch review |
 | 📝 **Summaries** | Template + revision | + **Glossary injection**, **smart chunking**, **timestamp seek to audio**, **docx export** |
@@ -181,7 +196,7 @@ This project is forked from [aham-voice](https://github.com/li599198347-svg/aham
 | 🧪 **Tests** | None | **pytest + 74 unit tests** (config / security / hotword discovery / docx / dialect correction, etc.) |
 | 🩺 **Robustness** | — | Interrupted-task auto-recovery, ffmpeg PATH fallback, sanitized error messages |
 
-> Mac users should use the [original project](https://github.com/li599198347-svg/aham-voice) directly (native MPS acceleration, smoother experience). This project targets **Linux / Windows servers**.
+> Mac users can use the one-click native script below (MPS GPU acceleration), or Docker (CPU only).
 
 ### Key Features
 
@@ -202,8 +217,23 @@ This project is forked from [aham-voice](https://github.com/li599198347-svg/aham
 
 ### Quick Start
 
+#### Mac (native MPS acceleration, one-click)
+
 ```bash
-git clone <repo> aham-voice-web && cd aham-voice-web
+git clone https://github.com/kaka86mm/aham-voice-web.git
+cd aham-voice-web
+cp .env.example .env          # Set LLM key (for summaries)
+./start-mac.sh                # First run: auto-installs deps + models (~5-10 min)
+```
+
+The script auto-checks environment, installs ffmpeg, creates venv, installs deps, and launches with MPS GPU acceleration. Subsequent runs: just `./start-mac.sh`.
+
+Open `http://localhost:8765`.
+
+#### Linux / Windows (Docker)
+
+```bash
+git clone https://github.com/kaka86mm/aham-voice-web.git && cd aham-voice-web
 cp .env.example .env          # Set password + LLM key
 docker compose up -d          # Auto-downloads ~4GB models on first run
 ```
