@@ -1,7 +1,7 @@
 ---
-name: aham-meeting
-title: Aham Voice 会议纪要
-description: 把用户发来的录音转成结构化会议纪要（Word docx）。收到录音后先问几个问题（标题/会议类型/客户项目/预计人数），填好后提交本机 aham-voice-web 服务，自动完成转写+说话人分离+LLM 纪要生成（含方言纠错），结果以 docx 文件返回。触发词：会议纪要、做个纪要、整理会议、整理录音、会议记录、meeting minutes、帮我把这个会议整理一下。
+name: titanvault-meeting
+title: TitanVault 会议纪要
+description: 把用户发来的录音转成结构化会议纪要（Word docx）。收到录音后先问几个问题（标题/会议类型/客户项目/预计人数），填好后提交本机 titanvault-minutes 服务，自动完成转写+说话人分离+LLM 纪要生成（含方言纠错），结果以 docx 文件返回。触发词：会议纪要、做个纪要、整理会议、整理录音、会议记录、meeting minutes、帮我把这个会议整理一下。
 tags: [meeting-minutes, summary, docx, feishu, voice-message, 录音, 纪要, 会议]
 triggers:
   - User sends an audio file (mp3, wav, m4a, ogg, opus, flac, aac) and expects meeting minutes
@@ -10,18 +10,18 @@ triggers:
   - User says "会议纪要"/"做个纪要"/"整理会议"/"会议记录"/"帮我把这个会议整理一下"
 ---
 
-# Aham Voice 会议纪要 Skill
+# TitanVault 会议纪要 Skill
 
-把录音转成结构化会议纪要（Word docx），复用本机 aham-voice-web 服务的 FunASR 转写 + 说话人分离 + LLM 纪要能力（含方言口音纠错）。
+把录音转成结构化会议纪要（Word docx），复用本机 titanvault-minutes 服务的 FunASR 转写 + 说话人分离 + LLM 纪要能力（含方言口音纠错）。
 
 ## 关键原则
 
-**收到录音后不要直接提交。先问用户几个问题**（对应 aham 表单字段），收集完整后再提交。这能显著提升纪要质量——会议类型决定纪要结构，客户/项目参与热词命中，预计人数让说话人分离更准。
+**收到录音后不要直接提交。先问用户几个问题**（对应 titanvault-minutes 表单字段），收集完整后再提交。这能显著提升纪要质量——会议类型决定纪要结构，客户/项目参与热词命中，预计人数让说话人分离更准。
 
 ## 环境约定
 
-- **aham-voice-web 服务**：`http://127.0.0.1:8800`（本机 Docker，host 网络）
-- **认证**：`Authorization: Bearer $AHAMVOICE_API_TOKEN`（固定 token，从环境变量读，已配置）
+- **titanvault-minutes 服务**：`http://127.0.0.1:8800`（本机 Docker，host 网络）
+- **认证**：`Authorization: Bearer $TITANVAULT_API_TOKEN`（固定 token，从环境变量读，已配置；旧名 $AHAMVOICE_API_TOKEN 仍兼容）
 - **飞书音频格式**：通常 `.ogg`（Opus），服务端自动转码，无需预先转换
 - **处理时长**：1 小时录音约 3-5 分钟（GPU 加速 + 纪要生成）
 
@@ -30,11 +30,11 @@ triggers:
 ### Step 0: 确认服务可用
 
 ```bash
-curl -sf -H "Authorization: Bearer $AHAMVOICE_API_TOKEN" \
+curl -sf -H "Authorization: Bearer $TITANVAULT_API_TOKEN" \
   http://127.0.0.1:8800/api/health > /dev/null && echo "服务正常" || echo "服务不可用"
 ```
 
-如果服务不可用，告诉用户"aham-voice-web 服务没启动，请联系管理员"，不要继续。
+如果服务不可用，告诉用户"titanvault-minutes 服务没启动，请联系管理员"，不要继续。
 
 ### Step 1: 收到录音 → 问用户表单问题（关键！）
 
@@ -68,7 +68,7 @@ curl -sf -H "Authorization: Bearer $AHAMVOICE_API_TOKEN" \
 # TAG=客户/项目（可选）
 # EXPECTED_SPK=预计说话人数（可选，留空则不传）
 RESPONSE=$(curl -sf -X POST http://127.0.0.1:8800/api/recordings \
-  -H "Authorization: Bearer $AHAMVOICE_API_TOKEN" \
+  -H "Authorization: Bearer $TITANVAULT_API_TOKEN" \
   -F "file=@${AUDIO_PATH}" \
   -F "title=${TITLE}" \
   -F "meeting_type=${MEETING_TYPE}" \
@@ -87,7 +87,7 @@ REC_ID=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.std
 # 最长等待 10 分钟（30 次 × 20 秒）
 for i in $(seq 1 30); do
   sleep 20
-  STATUS=$(curl -sf -H "Authorization: Bearer $AHAMVOICE_API_TOKEN" \
+  STATUS=$(curl -sf -H "Authorization: Bearer $TITANVAULT_API_TOKEN" \
     http://127.0.0.1:8800/api/recordings/$REC_ID \
     | python3 -c "import sys,json; d=json.load(sys.stdin); r=d.get('recording',d); print(r['asr_status']+'/'+r['summary_status'])")
 
@@ -101,7 +101,7 @@ done
 
 ```bash
 if [ "$STATUS" = "done/done" ]; then
-  DETAIL=$(curl -sf -H "Authorization: Bearer $AHAMVOICE_API_TOKEN" \
+  DETAIL=$(curl -sf -H "Authorization: Bearer $TITANVAULT_API_TOKEN" \
     http://127.0.0.1:8800/api/recordings/$REC_ID)
   SID=$(echo "$DETAIL" | python3 -c "
 import sys,json
@@ -114,7 +114,7 @@ print(cur[0]['id'] if cur else '')
 
   SAFE_TITLE=$(echo "$REC_TITLE" | tr '/\\:*?\"<>|' '_')
   DOCX_PATH="/tmp/${SAFE_TITLE}_纪要.docx"
-  curl -sf -H "Authorization: Bearer $AHAMVOICE_API_TOKEN" \
+  curl -sf -H "Authorization: Bearer $TITANVAULT_API_TOKEN" \
     "http://127.0.0.1:8800/api/recordings/$REC_ID/export/summaries/$SID.md?format=docx" \
     -o "$DOCX_PATH"
 fi
@@ -133,7 +133,7 @@ fi
 
 ```bash
 # 下载 markdown 取「一句话概览」作为摘要
-curl -sf -H "Authorization: Bearer $AHAMVOICE_API_TOKEN" \
+curl -sf -H "Authorization: Bearer $TITANVAULT_API_TOKEN" \
   "http://127.0.0.1:8800/api/recordings/$REC_ID/export/summaries/$SID.md" \
   -o /tmp/_summary_preview.md
 python3 -c "
@@ -161,7 +161,7 @@ Web 端查看：http://100.66.1.22:8800
 - **必须先问表单问题再提交**，不要收到录音就自动跑（除非用户明确说"不用问直接弄"）
 - **不要预先转码音频**：服务端 ffmpeg 处理，飞书 .ogg/.mp3/.m4a 都支持
 - **超时处理**：10 分钟未完成就告诉用户去 Web 看
-- **token 从环境变量读**：`$AHAMVOICE_API_TOKEN`
+- **token 从环境变量读**：`$TITANVAULT_API_TOKEN`（旧名 `$AHAMVOICE_API_TOKEN` 仍兼容）
 - **并发**：转写有全局锁，同时多个录音会排队
 
 ## 故障排查
@@ -169,7 +169,7 @@ Web 端查看：http://100.66.1.22:8800
 | 现象 | 原因 | 处理 |
 |---|---|---|
 | health 不通 | 容器没启动 | `docker compose -f docker-compose.yml -f docker-compose.rocm.yml up -d` |
-| 401 | token 失效 | 检查 `$AHAMVOICE_API_TOKEN` |
+| 401 | token 失效 | 检查 `$TITANVAULT_API_TOKEN` |
 | 413 | 文件超限 | 默认 2GB |
 | 一直 running | 排队/GPU 占用 | `docker logs aham-voice-web-ahamvoice-1` |
 | summary failed | LLM Key 失效 | 检查 `.env` 的 LLM 配置 |

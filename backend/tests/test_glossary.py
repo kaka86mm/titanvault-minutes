@@ -29,13 +29,13 @@ def test_glossary_prompt_basic_grouping():
     """按 kind 分组渲染，重要类型排在前面。"""
     glossary = {
         "人员": ["张总"],
-        "产品": ["AhamVoice", "金蝶接口"],
+        "产品": ["TitanVault Minutes", "金蝶接口"],
         "项目": ["智慧园区"],
     }
     text = glossary_prompt(glossary)
     # 产品必须排在人员前面（kind_order 中产品优先级更高）
     assert text.index("产品") < text.index("人员")
-    assert "AhamVoice、金蝶接口" in text
+    assert "TitanVault Minutes、金蝶接口" in text
     assert "智慧园区" in text
     assert "必须使用规范名" in text
 
@@ -93,7 +93,7 @@ def isolated_db(tmp_path, monkeypatch):
 def _seed_hotwords(conn):
     """插入 3 条热词（不同 kind），用于构建包。"""
     rows = [
-        ("AhamVoice", "产品", "aham voice", "系统内置", 10),
+        ("TitanVault Minutes", "产品", "titan", "系统内置", 10),
         ("智慧园区", "项目", "园区项目", "manual", 8),
         ("张总", "人员", "", "manual", 6),
     ]
@@ -117,7 +117,7 @@ def test_build_package_contains_glossary(isolated_db):
     assert "glossary" in package
     g = package["glossary"]
     assert isinstance(g, dict)
-    assert "AhamVoice" in g.get("产品", [])
+    assert "TitanVault Minutes" in g.get("产品", [])
     assert "智慧园区" in g.get("项目", [])
     assert "张总" in g.get("人员", [])
 
@@ -139,7 +139,7 @@ def test_build_package_glossary_persist_and_reload(isolated_db):
 
     assert loaded is not None
     assert "glossary" in loaded
-    assert "AhamVoice" in loaded["glossary"].get("产品", [])
+    assert "TitanVault Minutes" in loaded["glossary"].get("产品", [])
 
 
 def test_glossary_excludes_discarded_words(isolated_db):
@@ -158,5 +158,5 @@ def test_glossary_excludes_discarded_words(isolated_db):
 
     g = package["glossary"]
     assert "废弃词" not in g.get("产品", [])
-    assert "AhamVoice" in g.get("产品", [])
+    assert "TitanVault Minutes" in g.get("产品", [])
 

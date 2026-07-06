@@ -19,7 +19,7 @@ export const api = axios.create({
   withCredentials: true,
 });
 
-const TOKEN_KEY = "ahamvoice.token";
+const TOKEN_KEY = "tv.token";
 
 export function getStoredToken(): string | null {
   try {

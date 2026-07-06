@@ -1,9 +1,9 @@
 app:
-  description: 飞书/IM 发录音 → 问表单信息 → 自动生成会议纪要（Word docx）。调用本机 aham-voice-web 服务。
+  description: 飞书/IM 发录音 → 问表单信息 → 自动生成会议纪要（Word docx）。调用本机 titanvault-minutes 服务。
   icon: 🎙️
   icon_background: '#336EE8'
   mode: advanced-chat
-  name: Aham 会议纪要
+  name: TitanVault 会议纪要
   use_icon_as_answer_icon: false
 kind: app
 version: 0.1.5
@@ -203,11 +203,11 @@ graph:
       data:
         title: 提交录音并等待纪要
         type: http-request
-        desc: 上传录音到 aham-voice-web，同步等待转写+纪要完成
+        desc: 上传录音到 titanvault-minutes，同步等待转写+纪要完成
         method: post
         url: http://127.0.0.1:8800/api/recordings/process-and-wait
         headers: |-
-          Authorization: Bearer {{#env.AHAMVOICE_API_TOKEN#}}
+          Authorization: Bearer {{#env.TITANVAULT_API_TOKEN#}}
           Content-Type: multipart/form-data
         params: ''
         body:
@@ -257,7 +257,7 @@ graph:
         prompt_template:
           - role: system
             text: |-
-              你是会议纪要助手的回复组织器。把 aham-voice-web 的处理结果整理成用户友好的中文回复。
+              你是会议纪要助手的回复组织器。把 titanvault-minutes 的处理结果整理成用户友好的中文回复。
 
               规则：
               - 如果 status=done，回复纪要概览 + 下载链接
@@ -302,8 +302,8 @@ graph:
     zoom: 0.7
 environment_variables:
   - id: aham-api-token
-    name: AHAMVOICE_API_TOKEN
+    name: TITANVAULT_API_TOKEN
     value_type: string
     value: ''
-    description: aham-voice-web 的 API Token（在 aham .env 里配置的那个）
+    description: titanvault-minutes 的 API Token（在 .env 里配置的那个；旧名 AHAMVOICE_API_TOKEN 仍兼容）
 conversation_variables: []

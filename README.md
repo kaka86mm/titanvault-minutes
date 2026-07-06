@@ -1,6 +1,6 @@
 <div align="center">
 
-# Aham Voice Web
+# TitanVault Minutes
 
 **录音转写与会议纪要 · 自部署 Web 版 · GPU 加速 · 隐私优先**
 
@@ -9,7 +9,7 @@
 [![GPU](https://img.shields.io/badge/GPU-ROCm%20%7C%20CUDA%20%7C%20CPU-336EE8.svg)](#)
 [![Design](https://img.shields.io/badge/Design-Aham%20UI-336EE8.svg)](#)
 
-![Aham Voice](assets/social-preview.png)
+![TitanVault Minutes](assets/social-preview.png)
 
 [English](#english) · [中文](#中文)
 
@@ -27,13 +27,13 @@
 
 录音转写工具不少，但多是网页服务：音频要上传到别人的服务器，转写完只给一段没分说话人、没结构的纯文本。本地能离线跑的，又通常停在「出一段字」。
 
-**Aham Voice Web** 把整条链路在你的服务器上接完整——转写、说话人分离、声学情绪全部本地离线 GPU 加速，只有纪要才交给你的大模型，音频和数据不离开你的机器。
+**TitanVault Minutes** 把整条链路在你的服务器上接完整——转写、说话人分离、声学情绪全部本地离线 GPU 加速，只有纪要才交给你的大模型，音频和数据不离开你的机器。
 
 ### 与原版的区别
 
 本项目 fork 自 [aham-voice](https://github.com/li599198347-svg/aham-voice)（macOS 桌面应用，MIT），核心转写/声纹/纪要/情绪管线原样保留，**重做了形态、平台、扩展性和工程结构**：
 
-| 维度 | 原版 aham-voice | 本项目 aham-voice-web |
+| 维度 | 原版 aham-voice | 本项目 titanvault-minutes |
 |---|---|---|
 | 🖥️ **形态** | macOS 桌面 app（pywebview 打包 `.app`） | **Web 应用**，浏览器访问，手机/平板同 Wi-Fi 可用 |
 | 💻 **平台 / GPU** | 仅 macOS · MPS | **Linux + Windows** · CUDA / **ROCm（AMD）** / CPU 三档；**Mac 原生 MPS** |
@@ -70,8 +70,8 @@
 #### Mac 用户（原生 MPS 加速，一键脚本）
 
 ```bash
-git clone https://github.com/kaka86mm/aham-voice-web.git
-cd aham-voice-web
+git clone https://github.com/kaka86mm/titanvault-minutes.git
+cd titanvault-minutes
 cp .env.example .env          # 填 LLM Key（纪要用）
 ./start-mac.sh                # 首次自动装依赖+下模型，约 5-10 分钟
 ```
@@ -83,7 +83,7 @@ cp .env.example .env          # 填 LLM Key（纪要用）
 #### Linux / Windows（Docker）
 
 ```bash
-git clone https://github.com/kaka86mm/aham-voice-web.git && cd aham-voice-web
+git clone https://github.com/kaka86mm/titanvault-minutes.git && cd titanvault-minutes
 cp .env.example .env          # 填密码 + LLM Key
 docker compose up -d          # 首次自动下载 ~4GB 模型
 ```
@@ -95,8 +95,8 @@ docker compose up -d          # 首次自动下载 ~4GB 模型
 
 **NVIDIA CUDA**（Linux）：
 ```bash
-# docker-compose.yml 改 image: aham-voice-web:gpu, dockerfile: Dockerfile.gpu
-# 取消 deploy.resources 注释，.env 设 AHAMVOICE_ASR_DEVICE=cuda
+# docker-compose.yml 改 image: titanvault-minutes:gpu, dockerfile: Dockerfile.gpu
+# 取消 deploy.resources 注释，.env 设 TITANVAULT_ASR_DEVICE=cuda
 ```
 
 **AMD ROCm**（gfx1151/Radeon 等）：
@@ -110,11 +110,11 @@ docker compose -f docker-compose.yml -f docker-compose.rocm.yml up -d
 <summary><b>⚙️ 配置项（.env）</b></summary>
 
 ```bash
-AHAMVOICE_ACCESS_PASSWORD=          # 空=裸奔；非空=启用单密码门
+TITANVAULT_ACCESS_PASSWORD=          # 空=裸奔；非空=启用单密码门
 LLM_API_KEY=                         # OpenAI 兼容端点的 Key
 LLM_API_BASE=https://api.deepseek.com
 LLM_MODEL=deepseek-chat
-AHAMVOICE_ASR_DEVICE=cpu             # cpu / cuda
+TITANVAULT_ASR_DEVICE=cpu            # cpu / cuda
 ```
 
 </details>
@@ -146,7 +146,7 @@ backend/app/
 # 后端
 python -m venv .venv && source .venv/bin/activate
 pip install -r backend/requirements.txt
-AHAMVOICE_HOME=/tmp/aham-dev python -m uvicorn backend.app.main:app --port 8765 --reload
+TITANVAULT_HOME=/tmp/aham-dev python -m uvicorn backend.app.main:app --port 8765 --reload
 
 # 前端（另一个终端）
 cd frontend-src && npm install && npm run dev   # Vite 5174
@@ -177,13 +177,13 @@ python -m pytest backend/tests/ -v
 
 Most transcription tools are cloud services: you upload audio to someone else's server, and get back unstructured plain text without speaker labels. Local tools usually stop at "here's some text."
 
-**Aham Voice Web** completes the entire pipeline on your own server — transcription, speaker diarization, and acoustic emotion all run locally with GPU acceleration. Only the meeting summary goes to your LLM. Audio and data never leave your machine.
+**TitanVault Minutes** completes the entire pipeline on your own server — transcription, speaker diarization, and acoustic emotion all run locally with GPU acceleration. Only the meeting summary goes to your LLM. Audio and data never leave your machine.
 
 ### What's different from the original
 
 This project is forked from [aham-voice](https://github.com/li599198347-svg/aham-voice) (a macOS desktop app, MIT). The core transcription / voiceprint / summary / emotion pipeline is preserved as-is — **what we rebuilt is the form, platform, extensibility, and engineering structure**:
 
-| Dimension | Original aham-voice | This project aham-voice-web |
+| Dimension | Original aham-voice | This project titanvault-minutes |
 |---|---|---|
 | 🖥️ **Form** | macOS desktop app (pywebview, packaged `.app`) | **Web app** — browser access, phone/tablet on same Wi-Fi |
 | 💻 **Platform / GPU** | macOS only · MPS | **Linux + Windows** · CUDA / **ROCm (AMD)** / CPU; **Mac native MPS** |
@@ -220,8 +220,8 @@ This project is forked from [aham-voice](https://github.com/li599198347-svg/aham
 #### Mac (native MPS acceleration, one-click)
 
 ```bash
-git clone https://github.com/kaka86mm/aham-voice-web.git
-cd aham-voice-web
+git clone https://github.com/kaka86mm/titanvault-minutes.git
+cd titanvault-minutes
 cp .env.example .env          # Set LLM key (for summaries)
 ./start-mac.sh                # First run: auto-installs deps + models (~5-10 min)
 ```
@@ -233,7 +233,7 @@ Open `http://localhost:8765`.
 #### Linux / Windows (Docker)
 
 ```bash
-git clone https://github.com/kaka86mm/aham-voice-web.git && cd aham-voice-web
+git clone https://github.com/kaka86mm/titanvault-minutes.git && cd titanvault-minutes
 cp .env.example .env          # Set password + LLM key
 docker compose up -d          # Auto-downloads ~4GB models on first run
 ```
@@ -245,8 +245,8 @@ Open `http://<server-ip>:8765` in your browser. Phones/tablets on the same Wi-Fi
 
 **NVIDIA CUDA** (Linux):
 ```bash
-# Edit docker-compose.yml: image: aham-voice-web:gpu, dockerfile: Dockerfile.gpu
-# Uncomment deploy.resources, set AHAMVOICE_ASR_DEVICE=cuda in .env
+# Edit docker-compose.yml: image: titanvault-minutes:gpu, dockerfile: Dockerfile.gpu
+# Uncomment deploy.resources, set TITANVAULT_ASR_DEVICE=cuda in .env
 ```
 
 **AMD ROCm** (gfx1151/Radeon etc.):
@@ -260,11 +260,11 @@ docker compose -f docker-compose.yml -f docker-compose.rocm.yml up -d
 <summary><b>⚙️ Configuration (.env)</b></summary>
 
 ```bash
-AHAMVOICE_ACCESS_PASSWORD=          # Empty=no gate; set to enable password
+TITANVAULT_ACCESS_PASSWORD=          # Empty=no gate; set to enable password
 LLM_API_KEY=                         # Your OpenAI-compatible API key
 LLM_API_BASE=https://api.deepseek.com
 LLM_MODEL=deepseek-chat
-AHAMVOICE_ASR_DEVICE=cpu             # cpu / cuda
+TITANVAULT_ASR_DEVICE=cpu            # cpu / cuda
 ```
 
 </details>

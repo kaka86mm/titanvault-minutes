@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Aham Voice Web — Mac 一键启动脚本（原生 MPS 加速）
+# TitanVault Minutes — Mac 一键启动脚本（原生 MPS 加速）
 #
 # 用法：
 #   chmod +x start-mac.sh && ./start-mac.sh
@@ -117,10 +117,10 @@ export AHAMVOICE_ASR_DEVICE="${AHAMVOICE_ASR_DEVICE:-$DEVICE}"
 
 # ─── 8. 启动 ───
 PORT="${AHAMVOICE_PORT:-8765}"
-step "启动 Aham Voice Web（端口 $PORT，$DEVICE 加速）..."
+step "启动 TitanVault Minutes（端口 $PORT，$DEVICE 加速）..."
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  🎙️  Aham Voice Web 正在启动..."
+echo "  🎙️  TitanVault Minutes 正在启动..."
 echo "  📍 浏览器打开：http://localhost:$PORT"
 echo "  ⚡ GPU 加速：$DEVICE"
 echo "  📁 数据目录：$AHAMVOICE_HOME"

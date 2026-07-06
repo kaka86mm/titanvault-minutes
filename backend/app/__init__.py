@@ -1,1 +1,1 @@
-"""AhamVoice backend package."""
+"""TitanVault Minutes backend package."""

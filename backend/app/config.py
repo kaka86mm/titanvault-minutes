@@ -37,6 +37,22 @@ load_env_file(ROOT / ".env.local")
 load_env_file(ROOT / ".env")
 
 
+def env_compat(name: str) -> str | None:
+    """读环境变量，TITANVAULT_* 优先，AHAMVOICE_* 回退（改名兼容）。
+
+    项目从 aham-voice-web 改名为 titanvault-minutes，环境变量前缀从
+    AHAMVOICE_ 改成 TITANVAULT_。老用户的 .env 用 AHAMVOICE_* 仍生效。
+    调用方传新名（TITANVAULT_*），本函数自动回退旧名。
+    """
+    val = os.environ.get(name)
+    if val is not None:
+        return val
+    if name.startswith("TITANVAULT_"):
+        legacy = "AHAMVOICE_" + name[len("TITANVAULT_"):]
+        return os.environ.get(legacy)
+    return None
+
+
 def _default_base() -> Path:
     # Per-user writable data dir (DB, recordings, config.json). Overridable
     # via RECORDING_AI_HOME.
@@ -47,7 +63,7 @@ def _default_base() -> Path:
 
 # 数据根目录。优先 AHAMVOICE_HOME（新名，Docker/compose 用），回退 RECORDING_AI_HOME
 # （原项目历史名，保留兼容），再回退平台默认。
-BASE = Path(os.environ.get("AHAMVOICE_HOME") or os.environ.get("RECORDING_AI_HOME") or _default_base())
+BASE = Path(env_compat("TITANVAULT_HOME") or os.environ.get("RECORDING_AI_HOME") or _default_base())
 APP_DATA = BASE / "app-data"
 DB_PATH = APP_DATA / "ahamvoice.sqlite3"
 RECORDINGS = APP_DATA / "recordings"
@@ -55,14 +71,14 @@ EXPORTS = APP_DATA / "exports"
 TMP = APP_DATA / "tmp"
 # Models and ffmpeg are read-only assets. AHAMVOICE_MODELS_DIR / AHAMVOICE_BIN_DIR
 # override for the Docker volume layout; default to BASE/... for local dev.
-MODELS = Path(os.environ.get("AHAMVOICE_MODELS_DIR") or (BASE / "models" / "modelscope" / "iic"))
+MODELS = Path(env_compat("TITANVAULT_MODELS_DIR") or (BASE / "models" / "modelscope" / "iic"))
 VAD = MODELS / "speech_fsmn_vad_zh-cn-16k-common-pytorch"
 PUNC = MODELS / "punc_ct-transformer_cn-en-common-vocab471067-large"
 PARAFORMER = MODELS / "speech_seaco_paraformer_large_asr_nat-zh-cn-16k-common-vocab8404-pytorch"
 CAMPLUS = MODELS / "speech_campplus_sv_zh-cn_16k-common"
 EMOTION = MODELS / "emotion2vec_plus_large"
 VOICEPRINTS = BASE / "voiceprints"
-BIN_DIR = Path(os.environ.get("AHAMVOICE_BIN_DIR") or (BASE / "bin"))
+BIN_DIR = Path(env_compat("TITANVAULT_BIN_DIR") or (BASE / "bin"))
 os.environ["PATH"] = f"{BIN_DIR}:{os.environ.get('PATH', '')}"
 # ffmpeg/ffprobe：优先 BIN_DIR（原 Mac 桌面版静态化），找不到则从系统 PATH 解析
 # （Docker 版 apt 装在 /usr/bin/ffmpeg）。
@@ -143,30 +159,32 @@ def get_deepseek_config() -> tuple[str, str, str]:
 
 
 def env_int(name: str, default: int, minimum: int, maximum: int) -> int:
+    raw = env_compat(name)
     try:
-        value = int(os.environ.get(name, str(default)))
+        value = int(raw) if raw is not None else default
     except ValueError:
         value = default
     return max(minimum, min(value, maximum))
 
 
 def env_float(name: str, default: float, minimum: float, maximum: float) -> float:
+    raw = env_compat(name)
     try:
-        value = float(os.environ.get(name, str(default)))
+        value = float(raw) if raw is not None else default
     except ValueError:
         value = default
     return max(minimum, min(value, maximum))
 
 
 def env_bool(name: str, default: bool = False) -> bool:
-    raw = os.environ.get(name)
+    raw = env_compat(name)
     if raw is None:
         return default
     return raw.strip().lower() in {"1", "true", "yes", "on"}
 
 
 def env_json(name: str, default: Any) -> Any:
-    raw = os.environ.get(name, "").strip()
+    raw = env_compat(name) or ""
     if not raw:
         return default
     try:

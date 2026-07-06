@@ -1,8 +1,8 @@
 services:
-  ahamvoice:
-    # 默认 CPU 版。GPU 用户改 image: aham-voice-web:gpu + dockerfile: Dockerfile.gpu
+  titanvault-minutes:
+    # 默认 CPU 版。GPU 用户改 image: titanvault-minutes:gpu + dockerfile: Dockerfile.gpu
     # 并取消下方 deploy.resources 注释（需 nvidia-container-toolkit）。
-    image: aham-voice-web:latest
+    image: titanvault-minutes:latest
     build:
       context: .
       dockerfile: Dockerfile.cpu

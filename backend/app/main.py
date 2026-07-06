@@ -33,11 +33,11 @@ from .config import (
     MODELS, VAD, PUNC, PARAFORMER, CAMPLUS, EMOTION, VOICEPRINTS,
     BIN_DIR, FFMPEG, FFPROBE, CONFIG_PATH,
     load_user_config, save_user_config, get_llm_config,
-    env_int, env_float, env_bool, env_json,
+    env_int, env_float, env_bool, env_json, env_compat,
 )
 
 
-app = FastAPI(title="AhamVoice Local API", version="0.2.0")
+app = FastAPI(title="TitanVault Minutes API", version="0.2.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -1452,7 +1452,7 @@ def system_status(user: dict[str, Any] = Depends(current_user)) -> dict[str, Any
 # Registered LAST so every /api route above takes precedence; unknown non-API
 # paths fall back to index.html for the client-side router (SPA).
 # ---------------------------------------------------------------------------
-FRONTEND_DIR = Path(os.environ.get("AHAMVOICE_FRONTEND_DIR") or (ROOT / "frontend" / "dist"))
+FRONTEND_DIR = Path(env_compat("TITANVAULT_FRONTEND_DIR") or (ROOT / "frontend" / "dist"))
 
 if (FRONTEND_DIR / "index.html").exists():
     if (FRONTEND_DIR / "assets").is_dir():

@@ -2,13 +2,13 @@
 # 适用于 AMD GPU（gfx1151/Radeon 8060S 等）+ ROCm 宿主。
 # 注意：group_add 的 gid 必须按宿主实际值改（getent group render/video）。
 services:
-  ahamvoice:
+  titanvault-minutes:
     build:
       dockerfile: Dockerfile.rocm
       args:
         # 宿主已有的 ROCm+PyTorch 镜像（零下载）。各机器不同，按实际改。
         ROCM_BASE: cortibox-rocm-base:latest
-    image: aham-voice-web:rocm
+    image: titanvault-minutes:rocm
     environment:
       - AHAMVOICE_ASR_DEVICE=cuda
       # 若报 "no kernel image available" 取消下行注释：

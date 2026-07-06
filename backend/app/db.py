@@ -14,7 +14,7 @@ from typing import Any
 
 from fastapi import HTTPException
 
-from .config import DB_PATH, TMP, EXPORTS
+from .config import DB_PATH, TMP, EXPORTS, env_compat
 from .state import _LOCAL_USER  # recording_payload 用 owner_name
 
 
@@ -413,7 +413,7 @@ def ensure_schema() -> None:
             conn.execute("alter table recording_hotword_packages add column glossary text not null default '{}'")
         if not conn.execute("select 1 from hotwords limit 1").fetchone():
             seed_hotwords = [
-                ("AhamVoice", "产品", "aham voice,aham", "系统内置", "部门共享", 10, 1),
+                ("TitanVault Minutes", "产品", "titanvault minutes,titan", "系统内置", "部门共享", 10, 1),
                 ("ERP", "行业", "企业资源计划", "产品库", "部门共享", 8, 1),
                 ("MES", "行业", "制造执行系统", "产品库", "部门共享", 8, 1),
                 ("金蝶接口", "项目", "金蝶 API,金蝶系统", "系统内置", "团队共享", 9, 1),
@@ -501,8 +501,8 @@ def sweep_tmp_and_exports() -> dict[str, int]:
     accumulate forever (every playback writes a new one) — observed 131 files
     in TMP, 125 older than 1 day. Exports grow the same way.
     """
-    tmp_ttl = int(os.environ.get("AHAMVOICE_TMP_TTL_HOURS", "24")) * 3600
-    export_ttl = int(os.environ.get("AHAMVOICE_EXPORT_TTL_DAYS", "14")) * 86400
+    tmp_ttl = int(env_compat("TITANVAULT_TMP_TTL_HOURS") or "24") * 3600
+    export_ttl = int(env_compat("TITANVAULT_EXPORT_TTL_DAYS") or "14") * 86400
     now_ts = time.time()
     tmp_cutoff = now_ts - tmp_ttl
     export_cutoff = now_ts - export_ttl
@@ -528,7 +528,7 @@ def sweep_tmp_and_exports() -> dict[str, int]:
 
 def _start_cleanup_loop() -> None:
     """Run sweep_tmp_and_exports on a timer in a daemon thread."""
-    interval = int(os.environ.get("AHAMVOICE_SWEEP_INTERVAL_MINUTES", "60")) * 60
+    interval = int(env_compat("TITANVAULT_SWEEP_INTERVAL_MINUTES") or "60") * 60
 
     def _loop() -> None:
         # First sweep immediately so a fresh server reclaims stale files from
@@ -540,7 +540,7 @@ def _start_cleanup_loop() -> None:
                 pass
             time.sleep(interval)
 
-    threading.Thread(target=_loop, name="ahamvoice-cleanup", daemon=True).start()
+    threading.Thread(target=_loop, name="tv-cleanup", daemon=True).start()
 
 
 

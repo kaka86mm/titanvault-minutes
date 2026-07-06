@@ -32,7 +32,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 from starlette.types import ASGIApp
 
-COOKIE_NAME = "aham_token"
+COOKIE_NAME = "tv_token"
 
 # 不需要 token 的路径：登录本身 + 健康检查 + 静态资源（否则登录页打不开）
 WHITELIST_PREFIXES = ("/api/auth/login", "/api/health", "/assets/")
@@ -106,11 +106,11 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 def build_security() -> Security:
     """从 env 读密码和可选的固定 API Token 构造 Security。
 
-    - AHAMVOICE_ACCESS_PASSWORD：空 → 密码门不启用
-    - AHAMVOICE_API_TOKEN：非空则作为固定 long-lived token 注入，
-      供 Hermes/脚本等用 Bearer 调 API（重启不失效，配置驱动）。
+    - TITANVAULT_ACCESS_PASSWORD / AHAMVOICE_ACCESS_PASSWORD：空 → 密码门不启用
+    - TITANVAULT_API_TOKEN / AHAMVOICE_API_TOKEN：非空则作为固定 long-lived token
     """
+    from .config import env_compat
     return Security(
-        password=os.environ.get("AHAMVOICE_ACCESS_PASSWORD") or None,
-        api_token=os.environ.get("AHAMVOICE_API_TOKEN") or None,
+        password=env_compat("TITANVAULT_ACCESS_PASSWORD") or None,
+        api_token=env_compat("TITANVAULT_API_TOKEN") or None,
     )

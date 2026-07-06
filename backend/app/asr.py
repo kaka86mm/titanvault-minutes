@@ -15,7 +15,7 @@ from fastapi import HTTPException
 
 from . import state
 from .config import (
-    PARAFORMER, VAD, PUNC, CAMPLUS, FFMPEG, env_int,
+    PARAFORMER, VAD, PUNC, CAMPLUS, FFMPEG, env_int, env_compat,
 )
 from .db import (
     db, now, rowdict, rowsdict, safe_json, seconds_label,
@@ -113,7 +113,7 @@ def recover_queued_recordings() -> int:
                 # process_recording_background already records failure in DB.
                 continue
 
-    threading.Thread(target=_drain, name="ahamvoice-queued-recovery", daemon=True).start()
+    threading.Thread(target=_drain, name="tv-queued-recovery", daemon=True).start()
     return len(pending)
 
 
@@ -155,11 +155,11 @@ def get_asr_model() -> Any:
                 # Performance knobs. Default device stays CPU (the safe, always-works
                 # path). Set AHAMVOICE_ASR_DEVICE=mps to try the Apple GPU. Threads
                 # default to all cores; AHAMVOICE_ASR_THREADS overrides.
-                device = (os.environ.get("AHAMVOICE_ASR_DEVICE") or "cpu").strip() or "cpu"
+                device = (env_compat("TITANVAULT_ASR_DEVICE") or "cpu").strip() or "cpu"
                 try:
                     import torch
 
-                    threads = int(os.environ.get("AHAMVOICE_ASR_THREADS") or (os.cpu_count() or 4))
+                    threads = int(env_compat("TITANVAULT_ASR_THREADS") or (os.cpu_count() or 4))
                     torch.set_num_threads(max(1, threads))
                 except Exception:
                     pass
@@ -167,7 +167,7 @@ def get_asr_model() -> Any:
                 state.asr_model = AutoModel(
                     model=str(PARAFORMER),
                     vad_model=str(VAD),
-                    vad_kwargs={"max_single_segment_time": int(os.environ.get("AHAMVOICE_VAD_MAX_SEGMENT_MS", "30000"))},
+                    vad_kwargs={"max_single_segment_time": int(env_compat("TITANVAULT_VAD_MAX_SEGMENT_MS") or "30000")},
                     punc_model=str(PUNC),
                     spk_model=str(CAMPLUS),
                     device=device,
@@ -221,7 +221,7 @@ def semantic_segment_settings() -> dict[str, float | int]:
         "max_chars": env_int("AHAMVOICE_SEGMENT_MAX_CHARS", 120, 60, 240),
         "soft_chars": env_int("AHAMVOICE_SEGMENT_SOFT_CHARS", 80, 40, 180),
         "max_seconds": env_int("AHAMVOICE_SEGMENT_MAX_SECONDS", 35, 10, 90),
-        "gap_seconds": float(os.environ.get("AHAMVOICE_SEGMENT_GAP_SECONDS", "2.0")),
+        "gap_seconds": float(env_compat("TITANVAULT_SEGMENT_GAP_SECONDS") or "2.0"),
     }
 
 
@@ -376,7 +376,7 @@ def transcribe_recording(recording_id: str, user: dict[str, Any], segment_second
         generate_kwargs: dict[str, Any] = {
             "input": str(Path(rec["file_path"])),
             "cache": {},
-            "batch_size_s": int(os.environ.get("AHAMVOICE_BATCH_SIZE_S", "300")),
+            "batch_size_s": int(env_compat("TITANVAULT_BATCH_SIZE_S") or "300"),
         }
         if hotword_text:
             generate_kwargs["hotword"] = hotword_text
@@ -399,7 +399,7 @@ def transcribe_recording(recording_id: str, user: dict[str, Any], segment_second
         # 方言口音纠错（可选，环境变量开关）。SeACo 对方言会产生大量近音错字，
         # LLM 结合上下文能纠正。实测贵州话纠错率约 80%，质量好。
         # 失败不阻塞——保留原文继续，转写/纪要照常。
-        if os.environ.get("AHAMVOICE_DIALECT_CORRECTION", "").lower() in ("1", "true", "yes"):
+        if (env_compat("TITANVAULT_DIALECT_CORRECTION") or "").lower() in ("1", "true", "yes"):
             try:
                 from .dialect_correction import correct_dialect_segments
                 with db() as conn:

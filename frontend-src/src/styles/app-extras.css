@@ -98,7 +98,7 @@
   border-top-color: transparent;
   border-radius: 50%;
   color: var(--accent-fg);
-  animation: ahamvoice-spin 700ms linear infinite;
+  animation: tv-spin 700ms linear infinite;
 }
 .btn--ghost.btn--loading::after,
 .btn--secondary.btn--loading::after { color: var(--fg-default); }
@@ -657,7 +657,7 @@ input[type="radio"] {
   background: var(--bg-overlay);
   z-index: var(--z-modal);
 }
-.preview-drawer.ahamvoice-drawer {
+.preview-drawer.tv-drawer {
   z-index: calc(var(--z-modal) + 1);
 }
 

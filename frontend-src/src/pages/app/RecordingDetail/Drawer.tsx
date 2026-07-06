@@ -35,7 +35,7 @@ export function Drawer({ open, title, subtitle, onClose, children }: Props) {
     <>
       <div className="drawer-scrim" onClick={onClose} aria-hidden />
       <aside
-        className="preview-drawer ahamvoice-drawer"
+        className="preview-drawer tv-drawer"
         role="dialog"
         aria-modal="true"
         aria-label={typeof title === "string" ? title : undefined}
