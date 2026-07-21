@@ -8,6 +8,11 @@
 ## [Unreleased]
 
 ### Added
+- **MOSS-Transcribe-Diarize 引擎**：可选端到端 ASR 引擎（`TITANVAULT_ASR_ENGINE=moss`），0.9B 模型一次推理同时完成转写+说话人分离+时间戳，支持 90 分钟长音频（INTERSPEECH 2026 MLC-SLM 冠军）
+  - Dockerfile `BUILD_MOSS=1` 构建参数安装 MOSS helper 包，默认不装（零影响 FunASR 模式）
+  - MOSS 模式声纹匹配：合并短段 → CAM++ 比对 → 兜底阈值 → 排除法（解决 MOSS 分割粒度差异）
+  - MOSS 模式热词：prompt 软引导 + 后置替换双轨
+  - ROCm Efficient Attention（`TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1`）防止长音频 attention OOM
 - **Web 化**：去桌面壳（pywebview），浏览器访问，Docker 部署（Linux/Windows）
 - **单密码门**：局域网共享时可选启用（cookie token + middleware）
 - **OpenAI 兼容端点**：纪要/情绪支持任意 OpenAI Chat Completions 兼容服务

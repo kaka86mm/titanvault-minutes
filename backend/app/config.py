@@ -77,6 +77,11 @@ PUNC = MODELS / "punc_ct-transformer_cn-en-common-vocab471067-large"
 PARAFORMER = MODELS / "speech_seaco_paraformer_large_asr_nat-zh-cn-16k-common-vocab8404-pytorch"
 CAMPLUS = MODELS / "speech_campplus_sv_zh-cn_16k-common"
 EMOTION = MODELS / "emotion2vec_plus_large"
+# MOSS-Transcribe-Diarize (可选端到端转写+分离引擎, 替代 FunASR Paraformer+CAM++)
+# 路径指向 HF snapshot 目录 (含 config.json + safetensors)
+MOSS_MODEL = Path(env_compat("TITANVAULT_MOSS_MODEL") or (MODELS / "moss-transcribe-diarize"))
+# ASR 引擎选择: funasr (默认, Paraformer+CAM++) / moss (端到端, 需 BUILD_MOSS=1 构建镜像)
+ASR_ENGINE = (env_compat("TITANVAULT_ASR_ENGINE") or "funasr").lower()
 VOICEPRINTS = BASE / "voiceprints"
 BIN_DIR = Path(env_compat("TITANVAULT_BIN_DIR") or (BASE / "bin"))
 os.environ["PATH"] = f"{BIN_DIR}:{os.environ.get('PATH', '')}"

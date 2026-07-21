@@ -30,7 +30,16 @@ WORKDIR /app
 COPY backend/requirements.txt ./backend/
 RUN pip install --no-cache-dir -r backend/requirements.txt && \
     pip install --no-cache-dir funasr modelscope librosa soundfile scipy scikit-learn && \
-    pip install --no-cache-dir addict datasets simplejson
+    pip install --no-cache-dir addict datasets simplejson && \
+    pip install --no-cache-dir av
+
+# MOSS-Transcribe-Diarize (可选端到端 ASR 引擎, 默认不启用)
+# 从 GitHub 安装 helper 包; 模型权重运行时从挂载目录加载 (不入镜像)
+# 启用: --build-arg BUILD_MOSS=1
+ARG BUILD_MOSS=0
+RUN if [ "$BUILD_MOSS" = "1" ]; then \
+      pip install --no-cache-dir "git+https://github.com/OpenMOSS/MOSS-Transcribe-Diarize.git"; \
+    fi
 
 COPY backend/ ./backend/
 COPY frontend/dist/ ./frontend/dist/
@@ -40,9 +49,11 @@ ENV PATH="/opt/conda/bin:$PATH" \
     AHAMVOICE_PORT=8765 \
     AHAMVOICE_HOME=/data \
     AHAMVOICE_MODELS_DIR=/models \
-    AHAMVOICE_ASR_DEVICE=cuda
+    AHAMVOICE_ASR_DEVICE=cuda \
+    AHAMVOICE_ASR_ENGINE=funasr
 # FunASR/torch 用 "cuda" 字符串触发 GPU 路径；ROCm 的 HIP 后端响应 device="cuda"
 # （HIP cuda 兼容层）。已实测 torch.cuda.is_available()=True on Radeon 8060S。
+# AHAMVOICE_ASR_ENGINE: funasr (默认) / moss (需 BUILD_MOSS=1 + 挂载 MOSS 模型到 /models/moss-transcribe-diarize)
 
 VOLUME ["/models", "/data"]
 EXPOSE 8765

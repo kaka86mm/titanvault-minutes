@@ -63,6 +63,7 @@
 | 💬 **IM 集成** | API Token 供飞书/Hermes 等 agent 调用，发录音自动生成纪要发回 |
 | 🗣️ **说话人分离** | CAM++ 声纹，逐句标注谁在说，声纹可管理 |
 | 🎭 **双层情绪** | emotion2vec 声学层 + LLM 语义层对冲分析 |
+| 🔧 **双 ASR 引擎** | 默认 FunASR（Paraformer+CAM++）；可选 [MOSS-Transcribe-Diarize](https://huggingface.co/OpenMOSS-Team/MOSS-Transcribe-Diarize)（0.9B 端到端转写+分离，INTERSPEECH 2026 冠军，支持 90 分钟长音频） |
 | 🐳 **一键部署** | Docker 镜像，`docker compose up -d` 即用 |
 
 ### 快速开始
@@ -120,6 +121,41 @@ TITANVAULT_ASR_DEVICE=cpu            # cpu / cuda
 </details>
 
 <details>
+<summary><b>🔧 ASR 引擎切换（FunASR / MOSS）</b></summary>
+
+默认使用 **FunASR**（Paraformer + VAD + 标点 + CAM++ 说话人分离），开箱即用。
+
+可选切换到 **[MOSS-Transcribe-Diarize](https://huggingface.co/OpenMOSS-Team/MOSS-Transcribe-Diarize)**（复旦 OpenMOSS，0.9B 端到端转写+说话人分离，INTERSPEECH 2026 MLC-SLM 冠军）：
+
+| | FunASR（默认） | MOSS |
+|---|---|---|
+| **转写+分离** | 两步：Paraformer ASR + CAM++ 聚类 | 一步端到端，不存在对齐问题 |
+| **长音频** | 分块处理，说话人标签可能跨块不一致 | 单次推理 90 分钟，说话人全局一致 |
+| **声纹匹配** | CAM++ 精确，分数高 | 合并段 + 兜底阈值 + 排除法 |
+| **热词** | 声学层硬约束 | prompt 软引导 + 后置替换 |
+| **情绪分析** | ✅ emotion2vec | ✅ emotion2vec（引擎无关） |
+| **GPU 显存** | ~4GB | ~6.4GB（需 SDPA/Efficient Attention） |
+
+**启用 MOSS**（仅 ROCm Docker）：
+
+```bash
+# 1. 构建镜像（装 MOSS helper 包）
+docker compose -f docker-compose.rocm.yml build --build-arg BUILD_MOSS=1
+
+# 2. 下载模型到挂载目录
+# 从 HuggingFace 下载 OpenMOSS-Team/MOSS-Transcribe-Diarize 到 ./models/moss-transcribe-diarize/
+
+# 3. .env 切换引擎
+echo "TITANVAULT_ASR_ENGINE=moss" >> .env
+# ROCm Efficient Attention（MOSS 长音频必需，防 OOM）
+echo "TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1" >> .env
+
+docker compose -f docker-compose.rocm.yml up -d
+```
+
+</details>
+
+<details>
 <summary><b>🏗️ 架构</b></summary>
 
 ```
@@ -128,7 +164,7 @@ backend/app/
 ├── config.py          # 路径/env/LLM 配置
 ├── db.py              # SQLite + schema + 中断恢复
 ├── security.py        # 单密码门
-├── asr.py             # FunASR 转写（枢纽）
+├── asr.py             # ASR 转写（枢纽）：FunASR 默认 / MOSS 可选 (TITANVAULT_ASR_ENGINE)
 ├── hotwords.py        # 热词双轨系统
 ├── hotword_discover.py # 热词 LLM 智能发现
 ├── voiceprint.py      # 声纹多采样匹配
@@ -213,6 +249,7 @@ This project is forked from [aham-voice](https://github.com/li599198347-svg/aham
 | 💬 **IM integration** | API Token for Feishu/Hermes agents — send audio, get summary back |
 | 🗣️ **Speaker diarization** | CAM++ voiceprints, per-utterance speaker labels, manageable profiles |
 | 🎭 **Dual-layer emotion** | emotion2vec acoustic + LLM semantic analysis |
+| 🔧 **Dual ASR engine** | Default FunASR (Paraformer+CAM++); optional [MOSS-Transcribe-Diarize](https://huggingface.co/OpenMOSS-Team/MOSS-Transcribe-Diarize) (0.9B end-to-end, INTERSPEECH 2026 champion, 90-min long-form audio) |
 | 🐳 **One-command deploy** | Docker image, `docker compose up -d` and you're running |
 
 ### Quick Start
