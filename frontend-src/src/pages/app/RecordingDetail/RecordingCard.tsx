@@ -5,6 +5,9 @@ interface Props {
   recording: Recording;
   segments: TranscriptSegment[];
   hotwordPackage: HotwordPackage | null;
+  /** 外部传入的 audio ref，绑定到 <audio> 元素，让纪要里的时间戳能 seek 到这里。
+   *  由父组件 index.tsx 持有，Preview 通过它控制播放。 */
+  audioRef?: React.RefObject<HTMLAudioElement | null>;
 }
 
 function uniqueSpeakerCount(segments: TranscriptSegment[]): number {
@@ -26,7 +29,7 @@ function matchedVoiceprintCount(segments: TranscriptSegment[]): number {
 
 // 录音 card: filename row + native audio player + 3 stat tiles
 // (热词 · 已启用/未启用 / 声纹 · 待匹配 N/M / 说话人 · N 位).
-export function RecordingCard({ recording, segments, hotwordPackage }: Props) {
+export function RecordingCard({ recording, segments, hotwordPackage, audioRef }: Props) {
   const speakerTotal = uniqueSpeakerCount(segments);
   const voiceprintMatched = matchedVoiceprintCount(segments);
   const hotwordsEnabled = !!hotwordPackage && hotwordPackage.asr_terms_count > 0;
@@ -44,6 +47,7 @@ export function RecordingCard({ recording, segments, hotwordPackage }: Props) {
       </header>
 
       <audio
+        ref={audioRef}
         controls
         preload="metadata"
         src={recordingAudioUrl(recording.id)}
@@ -61,7 +65,7 @@ export function RecordingCard({ recording, segments, hotwordPackage }: Props) {
         <div className="stat-tile">
           <span className="stat-tile__label">热词</span>
           <span className={`stat-tile__value${hotwordsEnabled ? "" : " is-pending"}`}>
-            {hotwordsEnabled ? `已启用 · ${hotwordPackage!.asr_terms_count} 条` : "暂未启用"}
+            {hotwordsEnabled ? `转写用 ${hotwordPackage!.asr_terms_count} 条` : "暂未启用"}
           </span>
         </div>
         <div className="stat-tile">

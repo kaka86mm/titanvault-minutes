@@ -1,0 +1,309 @@
+app:
+  description: 飞书/IM 发录音 → 问表单信息 → 自动生成会议纪要（Word docx）。调用本机 titanvault-minutes 服务。
+  icon: 🎙️
+  icon_background: '#336EE8'
+  mode: advanced-chat
+  name: TitanVault 会议纪要
+  use_icon_as_answer_icon: false
+kind: app
+version: 0.1.5
+metadata:
+  created_at: '2026-06-30T00:00:00Z'
+  updated_at: '2026-06-30T00:00:00Z'
+  author: kaka86mm
+  tags:
+    - 会议纪要
+    - 录音转写
+features:
+  file_upload:
+    enabled: true
+    number_limits: 1
+    allowed_file_types:
+      - audio
+    allowed_file_extensions: []
+    fileUploadConfig:
+      file_size_limit: 2048
+      batch_count_limit: 1
+  opening_statement: |-
+    你好！我是会议纪要助手 🎙️
+
+    发送一段录音（音频文件），我会帮你生成结构化的会议纪要（Word 文档）。
+
+    支持中文会议，含方言口音纠错（贵州话/四川话等）。
+  suggested_questions:
+    - 帮我把这个会议录音整理成纪要
+    - 这段录音做个会议纪要
+  suggested_questions_after_answer:
+    enabled: false
+  more_like_this:
+    enabled: false
+  sensitive_word_avoidance:
+    enabled: false
+  speech_to_text:
+    enabled: false
+  text_to_speech:
+    enabled: false
+    language: zh-CN
+    voice: ''
+  retriever_resource:
+    enabled: true
+  annotation_reply:
+    enabled: false
+graph:
+  edges:
+    - id: edge-start-llm
+      source: start
+      sourceHandle: source
+      target: llm-collect-info
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - id: edge-llm-branch
+      source: llm-collect-info
+      sourceHandle: has-file
+      target: question-missing
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - id: edge-question-loop
+      source: question-missing
+      sourceHandle: source
+      target: llm-collect-info
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - id: edge-llm-http
+      source: llm-collect-info
+      sourceHandle: ready
+      target: http-submit-wait
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - id: edge-http-answer
+      source: http-submit-wait
+      sourceHandle: source
+      target: llm-answer
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - id: edge-answer-end
+      source: llm-answer
+      sourceHandle: source
+      target: end
+      targetHandle: target
+      type: custom
+      zIndex: 0
+  nodes:
+    - id: start
+      type: custom
+      position:
+        x: 80
+        y: 300
+      data:
+        title: 开始
+        type: start
+        variables: []
+        desc: 接收用户消息（文本+音频文件）
+        selected: false
+      width: 244
+      height: 54
+      positionAbsolute:
+        x: 80
+        y: 300
+    - id: llm-collect-info
+      type: custom
+      position:
+        x: 380
+        y: 200
+      data:
+        title: 收集纪要信息
+        type: llm
+        desc: 从用户消息提取标题/会议类型/客户项目/人数，判断信息是否齐全
+        model:
+          provider: ''
+          name: ''
+          mode: chat
+          completion_params:
+            temperature: 0.3
+            max_tokens: 500
+        prompt_template:
+          - role: system
+            text: |-
+              你是会议纪要助手的对话协调器。用户发来录音想要生成会议纪要。
+              你的任务：从对话中提取以下信息，判断是否齐全：
+
+              必需信息：
+              1. 会议标题（如用户没说，用"会议纪要"+日期）
+              2. 会议类型（内部会议/客户调研/方案汇报/销售电话，默认"内部会议"）
+
+              可选信息：
+              3. 客户/项目（如"浙江南都电源·储能项目"）
+              4. 预计说话人数
+
+              判断逻辑：
+              - 如果用户第一次发录音，回复确认收到并询问标题和会议类型
+              - 如果信息齐全（用户说了标题或表示用默认），输出 JSON：{"ready": true, "title": "...", "meeting_type": "...", "tag": "...", "expected_speakers": null}
+              - 用户说"默认就行"/"直接弄"，用默认值，ready=true
+              - 简洁，不要啰嗦
+          - role: user
+            text: '{{#sys.query#}}'
+        context:
+          enabled: false
+          variable: ''
+        vision:
+          enabled: false
+        structured_output_enabled: true
+        structured_output: '{{structured_output}}'
+        selected: false
+      width: 244
+      height: 98
+      positionAbsolute:
+        x: 380
+        y: 200
+    - id: question-missing
+      type: custom
+      position:
+        x: 380
+        y: 400
+      data:
+        title: 追问缺失信息
+        type: question-classifier
+        desc: 信息不全时追问用户
+        query_variable_selector:
+          - llm-collect-info
+          - text
+        model:
+          provider: ''
+          name: ''
+          mode: chat
+          completion_params:
+            temperature: 0.3
+        classes:
+          - id: need-title
+            name: 需要标题
+          - id: need-type
+            name: 需要会议类型
+          - id: ready
+            name: 信息齐全
+        instruction: |-
+          根据上一轮 LLM 的判断，决定是否需要追问。
+          如果信息齐全，走 ready 分支进入提交。
+          否则追问用户缺失的信息。
+        selected: false
+      width: 244
+      height: 110
+      positionAbsolute:
+        x: 380
+        y: 400
+    - id: http-submit-wait
+      type: custom
+      position:
+        x: 700
+        y: 200
+      data:
+        title: 提交录音并等待纪要
+        type: http-request
+        desc: 上传录音到 titanvault-minutes，同步等待转写+纪要完成
+        method: post
+        url: http://127.0.0.1:8800/api/recordings/process-and-wait
+        headers: |-
+          Authorization: Bearer {{#env.TITANVAULT_API_TOKEN#}}
+          Content-Type: multipart/form-data
+        params: ''
+        body:
+          type: form-data
+          data: |-
+            [
+              {"variable": "file", "value": "{{#sys.files[0]#}}"},
+              {"variable": "title", "value": "{{#llm-collect-info.text#}}"},
+              {"variable": "meeting_type", "value": "内部会议"},
+              {"variable": "timeout_seconds", "value": "600"}
+            ]
+        authorization:
+          type: no-auth
+        timeout:
+          connect: 10
+          read: 600
+          write: 10
+        retry:
+          max_retries: 1
+          retry_interval: 5000
+        ssl_verify: false
+        error_handling: continue-on-error
+        output_variable: body
+        is_streaming: false
+        selected: false
+      width: 244
+      height: 98
+      positionAbsolute:
+        x: 700
+        y: 200
+    - id: llm-answer
+      type: custom
+      position:
+        x: 1020
+        y: 200
+      data:
+        title: 组织回复
+        type: llm
+        desc: 把处理结果整理成用户友好的回复
+        model:
+          provider: ''
+          name: ''
+          mode: chat
+          completion_params:
+            temperature: 0.3
+            max_tokens: 800
+        prompt_template:
+          - role: system
+            text: |-
+              你是会议纪要助手的回复组织器。把 titanvault-minutes 的处理结果整理成用户友好的中文回复。
+
+              规则：
+              - 如果 status=done，回复纪要概览 + 下载链接
+              - 如果 status=timeout，告诉用户处理时间较长，给 Web 链接
+              - 如果 status=failed，告诉用户失败，给 Web 链接排查
+              - 简洁友好，用 emoji
+          - role: user
+            text: '{{#http-submit-wait.body#}}'
+        context:
+          enabled: false
+          variable: ''
+        vision:
+          enabled: false
+        selected: false
+      width: 244
+      height: 98
+      positionAbsolute:
+        x: 1020
+        y: 200
+    - id: end
+      type: custom
+      position:
+        x: 1340
+        y: 300
+      data:
+        title: 结束
+        type: end
+        outputs:
+          - variable: answer
+            value_selector:
+              - llm-answer
+              - text
+        selected: false
+      width: 244
+      height: 54
+      positionAbsolute:
+        x: 1340
+        y: 300
+  viewport:
+    x: 0
+    y: 0
+    zoom: 0.7
+environment_variables:
+  - id: aham-api-token
+    name: TITANVAULT_API_TOKEN
+    value_type: string
+    value: ''
+    description: titanvault-minutes 的 API Token（在 .env 里配置的那个；旧名 AHAMVOICE_API_TOKEN 仍兼容）
+conversation_variables: []

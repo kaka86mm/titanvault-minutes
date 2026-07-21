@@ -1,0 +1,32 @@
+# 仅 linux/amd64。CUDA 推理。
+# 适用：Linux + NVIDIA GPU（需 nvidia-container-toolkit + docker run --gpus all）
+FROM nvidia/cuda:12.1.1-runtime-ubuntu22.04
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg python3.12 python3-pip python3.12-venv libsndfile1 && \
+    rm -rf /var/lib/apt/lists/* && \
+    ln -sf /usr/bin/python3.12 /usr/local/bin/python
+
+WORKDIR /app
+
+COPY backend/requirements.txt backend/requirements-asr.txt ./backend/
+# 先装 CUDA 版 torch，再装其余依赖（覆盖 requirements-asr 里的 CPU torch）
+RUN pip install --no-cache-dir torch torchaudio --index-url https://download.pytorch.org/whl/cu121 && \
+    pip install --no-cache-dir -r backend/requirements-asr.txt
+
+COPY backend/ ./backend/
+COPY frontend/dist/ ./frontend/dist/
+
+ENV AHAMVOICE_HOST=0.0.0.0 \
+    AHAMVOICE_PORT=8765 \
+    AHAMVOICE_HOME=/data \
+    AHAMVOICE_MODELS_DIR=/models \
+    AHAMVOICE_ASR_DEVICE=cuda
+
+VOLUME ["/models", "/data"]
+EXPOSE 8765
+
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+    CMD python -c "import os,urllib.request; urllib.request.urlopen(f'http://127.0.0.1:{os.environ.get(\"AHAMVOICE_PORT\",\"8765\")}/api/health')" || exit 1
+
+CMD ["sh", "-c", "python -m uvicorn backend.app.main:app --host 0.0.0.0 --port ${AHAMVOICE_PORT:-8765}"]

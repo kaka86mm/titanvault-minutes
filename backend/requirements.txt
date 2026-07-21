@@ -3,3 +3,9 @@ uvicorn
 python-multipart
 python-dotenv
 httpx
+# 纪要导出 docx（国内主流格式）
+python-docx
+markdown
+
+# --- dev only（不进 Docker 镜像，仅本地测试用）---
+pytest==8.4.2

@@ -173,7 +173,7 @@ export function RecordingNew() {
           />
         </FormRow>
 
-        <FormRow label="自动处理" hint="上传后自动转写并调用 DeepSeek 生成纪要。关闭后可手动触发。">
+        <FormRow label="自动处理" hint="上传后自动转写并调用大模型生成纪要。关闭后可手动触发。">
           <label style={{ display: "inline-flex", gap: "var(--space-2)", alignItems: "center", cursor: "pointer" }}>
             <input
               type="checkbox"

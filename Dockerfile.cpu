@@ -1,0 +1,33 @@
+# 多架构（linux/amd64 + linux/arm64）。CPU 推理。
+# 适用：Linux 无 GPU / Windows（Docker Desktop，CPU only）/ Linux arm64
+FROM python:3.12-slim
+
+# ffmpeg + 音频系统依赖
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg libsndfile1 && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# 先装依赖（利用 layer cache；requirements-asr 含 torch/funasr/modelscope 全栈）
+COPY backend/requirements.txt backend/requirements-asr.txt ./backend/
+RUN pip install --no-cache-dir -r backend/requirements-asr.txt
+
+# 拷贝应用代码 + 构建好的前端（dist 由后端托管）
+COPY backend/ ./backend/
+COPY frontend/dist/ ./frontend/dist/
+
+ENV AHAMVOICE_HOST=0.0.0.0 \
+    AHAMVOICE_PORT=8765 \
+    AHAMVOICE_HOME=/data \
+    AHAMVOICE_MODELS_DIR=/models \
+    AHAMVOICE_ASR_DEVICE=cpu
+
+VOLUME ["/models", "/data"]
+EXPOSE 8765
+
+# 健康检查（密码门白名单放行 /api/health）
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+    CMD python -c "import os,urllib.request; urllib.request.urlopen(f'http://127.0.0.1:{os.environ.get(\"AHAMVOICE_PORT\",\"8765\")}/api/health')" || exit 1
+
+CMD ["sh", "-c", "python -m uvicorn backend.app.main:app --host 0.0.0.0 --port ${AHAMVOICE_PORT:-8765}"]

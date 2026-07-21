@@ -5,13 +5,8 @@ import path from "node:path";
 
 // AhamVoice frontend.
 //
-// Build target: ../frontend/dist (the static-served bundle that the existing
-// frontend_static_server.py picks up). The backend reads dist files directly,
-// so a clean `npm run build` is all you need to ship a new frontend.
-//
-// Dev server: 5174 (the production static server holds 5173). API calls are
-// proxied to the FastAPI backend on 8000 so the same axios client works in
-// dev and prod.
+// Build target: ../frontend/dist — FastAPI serves this directly (single-origin).
+// Dev server: 5174, proxies /api → backend on 8765.
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
@@ -24,7 +19,7 @@ export default defineConfig({
     strictPort: false,
     proxy: {
       "/api": {
-        target: "http://localhost:8000",
+        target: "http://localhost:8765",
         changeOrigin: true,
       },
     },

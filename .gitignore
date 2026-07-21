@@ -14,7 +14,6 @@ venvs/
 
 # ---------- Node / Vite ----------
 node_modules/
-frontend-src/dist/
 frontend-src/dist-ssr/
 .vite/
 *.tsbuildinfo
@@ -22,6 +21,8 @@ frontend-src/dist-ssr/
 # ---------- Runtime state (machine-local) ----------
 logs/
 .run/
+data/
+models/
 
 # ---------- OS / editors ----------
 .DS_Store

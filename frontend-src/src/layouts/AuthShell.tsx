@@ -8,7 +8,7 @@ export function AuthShell() {
       <div className="auth-shell__brand">
         <span className="brand-mark">A</span>
         <span>
-          AhamVoice <em>· 录音转写</em>
+          TitanVault Minutes <em>· 录音转写</em>
         </span>
       </div>
       <Outlet />

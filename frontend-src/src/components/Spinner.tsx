@@ -13,7 +13,7 @@ export function Spinner({ size = 14 }: { size?: number }) {
         border: "1.5px solid currentColor",
         borderTopColor: "transparent",
         borderRadius: "50%",
-        animation: "ahamvoice-spin 700ms linear infinite",
+        animation: "tv-spin 700ms linear infinite",
         verticalAlign: "middle",
       }}
     />

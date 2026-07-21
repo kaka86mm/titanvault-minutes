@@ -1,0 +1,13 @@
+.git
+frontend-src/node_modules
+**/__pycache__
+*.pyc
+.venv
+venv
+docs/
+.env
+.env.local
+data/
+models/
+logs/
+*.md

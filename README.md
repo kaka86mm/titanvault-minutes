@@ -1,96 +1,321 @@
-# Aham Voice — 单机 macOS 录音转写与会议纪要
+<div align="center">
 
-![Aham Voice — 录音转写与会议纪要](assets/social-preview.png)
+# TitanVault Minutes
 
-> aham 系列 · 本地优先 · 自带 Key。（应用包与数据目录仍名 `AhamVoice`，为构建产物标识。）
+**录音转写与会议纪要 · 自部署 Web 版 · GPU 加速 · 隐私优先**
 
-一个**单机 macOS 桌面应用**，开箱即用：
+[![License: MIT](https://img.shields.io/badge/License-MIT-336EE8.svg)](LICENSE)
+[![Type](https://img.shields.io/badge/Type-Self--hosted%20Web%20App-336EE8.svg)](#)
+[![GPU](https://img.shields.io/badge/GPU-ROCm%20%7C%20CUDA%20%7C%20CPU-336EE8.svg)](#)
+[![Design](https://img.shields.io/badge/Design-Aham%20UI-336EE8.svg)](#)
 
-- 录音 → 转写（FunASR paraformer + VAD + 标点）→ 说话人分离（CAM++）→ 声学情绪（emotion2vec），**全部本地离线**。
-- 会议纪要 + 情绪语义分析走**云端 DeepSeek**（在「设置」页填自己的 API Key，仅存本机，不回显明文）。
-- 无登录、无多用户、无外部集成；热词在「热词」页手动增删，或用「**导入 txt**」批量导入。
+![TitanVault Minutes](assets/social-preview.png)
 
-## 关于 Aham
+[English](#english) · [中文](#中文)
 
-> **把灵光一现，做成能用的 AI 工具。**
+</div>
 
-Aham 来自 *aha moment*。每个工具只把一件事做利落。
+---
 
-| 应用 | 一句话 |
+<a id="中文"></a>
+
+## 中文
+
+> 基于 [aham-voice](https://github.com/li599198347-svg/aham-voice)（MIT，原项目已归档）改造。
+
+### 为什么做
+
+录音转写工具不少，但多是网页服务：音频要上传到别人的服务器，转写完只给一段没分说话人、没结构的纯文本。本地能离线跑的，又通常停在「出一段字」。
+
+**TitanVault Minutes** 把整条链路在你的服务器上接完整——转写、说话人分离、声学情绪全部本地离线 GPU 加速，只有纪要才交给你的大模型，音频和数据不离开你的机器。
+
+### 与原版的区别
+
+本项目 fork 自 [aham-voice](https://github.com/li599198347-svg/aham-voice)（macOS 桌面应用，MIT），核心转写/声纹/纪要/情绪管线原样保留，**重做了形态、平台、扩展性和工程结构**：
+
+| 维度 | 原版 aham-voice | 本项目 titanvault-minutes |
+|---|---|---|
+| 🖥️ **形态** | macOS 桌面 app（pywebview 打包 `.app`） | **Web 应用**，浏览器访问，手机/平板同 Wi-Fi 可用 |
+| 💻 **平台 / GPU** | 仅 macOS · MPS | **Linux + Windows** · CUDA / **ROCm（AMD）** / CPU 三档；**Mac 原生 MPS** |
+| 🤖 **大模型** | 硬编码 DeepSeek | **任意 OpenAI 兼容端点**（DeepSeek / 通义 / Kimi / Ollama / vLLM） |
+| 🏷️ **热词** | 仅手工录入 / txt 导入 | + **LLM 智能发现**：转写后自动抽取候选词 → 批量审阅确认 |
+| 📝 **纪要** | 模板 + 改写 | + **热词规范名注入**、**智能分块**、**时间戳跳转音频**、**docx 导出** |
+| 🔐 **访问控制** | 多用户体系（users / sessions / teams / roles） | **单密码门**（删掉多用户死代码，局域网共享够用） |
+| 📦 **部署** | 手动打包 `.app` | **`docker compose up -d`** 一键起，含模型自动下载 |
+| 🧩 **代码结构** | 单文件 `main.py` 5000+ 行 | **拆成 13 个聚焦模块**（asr / hotwords / voiceprint / summary / emotion …） |
+| 🧪 **测试** | 无 | **pytest + 74 单测**（config / security / 热词发现 / docx / 方言纠错等） |
+| 🩺 **健壮性** | — | 中断任务自动恢复、ffmpeg 路径 fallback、错误信息脱敏 |
+
+> Mac 用户可以用下方"Mac 原生部署"一键脚本（MPS GPU 加速），也可以用 Docker（仅 CPU）。
+
+### 核心特性
+
+| 特性 | 说明 |
 |---|---|
-| [Aham UI](https://github.com/li599198347-svg/aham-ui) | 供 AI 消费的设计系统——写一次规范，AI 产出处处一致 |
-| [Aham Survey](https://github.com/li599198347-svg/aham-survey) | 现场调研工具（macOS）——聊一圈，调研结果自己长出来 |
-| [Aham Voice](https://github.com/li599198347-svg/aham-voice) | 录音转写与会议纪要（macOS）——录一段会，纪要已经写好 |
-| [Aham PPT](https://github.com/li599198347-svg/aham-ppt) | 咨询级 AI PPT 制作技能——丢一堆素材，幻灯片出来了 |
+| 🔒 **隐私优先** | 转写/说话人/情绪全部本地，音频不上传 |
+| ⚡ **GPU 加速** | AMD ROCm / NVIDIA CUDA / CPU 三种模式，21 分钟录音 30 秒转完 |
+| 🤖 **任意大模型** | 纪要走 OpenAI 兼容端点——DeepSeek / 通义 / Kimi / Ollama / vLLM 随便换 |
+| 🏷️ **热词智能发现** | 转写后 LLM 自动抽取专业术语，批量审阅确认 |
+| 📝 **结构化纪要** | 会议类型智能判断 + 智能分块 + 热词规范名注入，纪要专有名词写法统一 |
+| 🌐 **方言口音纠错** | 贵州话/四川话等方言的近音错字，转写后 LLM 结合上下文纠正（实测纠错率约 80%） |
+| 🔗 **时间戳跳转** | 纪要里的时间戳可点击，自动跳转音频对应位置播放 |
+| 📄 **Word 导出** | 纪要支持 docx 导出（国内主流格式），Markdown/Word 自由切换 |
+| 💬 **IM 集成** | API Token 供飞书/Hermes 等 agent 调用，发录音自动生成纪要发回 |
+| 🗣️ **说话人分离** | CAM++ 声纹，逐句标注谁在说，声纹可管理 |
+| 🎭 **双层情绪** | emotion2vec 声学层 + LLM 语义层对冲分析 |
+| 🔧 **双 ASR 引擎** | 默认 FunASR（Paraformer+CAM++）；可选 [MOSS-Transcribe-Diarize](https://huggingface.co/OpenMOSS-Team/MOSS-Transcribe-Diarize)（0.9B 端到端转写+分离，INTERSPEECH 2026 冠军，支持 90 分钟长音频） |
+| 🐳 **一键部署** | Docker 镜像，`docker compose up -d` 即用 |
 
-## 下载
+### 快速开始
 
-预编译安装包发布中。当前可按 [DEPLOY.md](DEPLOY.md) 从源码构建运行。
-
-## 架构
-
-```
-app_launcher.py              # 桌面入口：起 uvicorn + pywebview 原生窗口
-backend/app/main.py          # FastAPI 单进程（单文件），同时提供 /api 与前端 dist
-frontend-src/                # 前端源码（React + Vite + TS + Tailwind v4 + Aham 设计系统）
-frontend/dist/               # 前端构建产物（被跟踪；单进程挂载 + SPA fallback）
-packaging/macos/build_app.sh # 打包成自包含 .app + DMG
-```
-
-数据目录默认 `~/Library/Application Support/AhamVoice`（可用 `RECORDING_AI_HOME` 覆盖）；
-DeepSeek 配置存 `数据目录/config.json`。模型/ffmpeg 在打包时内置进 `.app`。
-
-> **在另一台 Mac 从源码部署**（装模型/依赖/ffmpeg、跑起来、打包）见 [DEPLOY.md](DEPLOY.md)。
-
-## 本机开发（单进程）
+#### Mac 用户（原生 MPS 加速，一键脚本）
 
 ```bash
-cd frontend-src && npm install && npm run build    # 产出 ../frontend/dist
-cd .. && <venv-python> -m uvicorn backend.app.main:app --port 8765
-# 浏览器打开 http://127.0.0.1:8765    （端口别用 5173/5174）
+git clone https://github.com/kaka86mm/titanvault-minutes.git
+cd titanvault-minutes
+cp .env.example .env          # 填 LLM Key（纪要用）
+./start-mac.sh                # 首次自动装依赖+下模型，约 5-10 分钟
 ```
 
-改了 `frontend-src` 必须重新 `npm run build`（`frontend/dist` 是被跟踪的）。
-后端语法自检：`<venv-python> -m py_compile backend/app/main.py`。
+脚本自动完成：检查环境 → 装 ffmpeg → 创建 venv → 装依赖 → 启动（MPS GPU 加速）。后续运行直接 `./start-mac.sh`。
 
-## 打包（出 .app + DMG）
+浏览器打开 `http://localhost:8765`。
+
+#### Linux / Windows（Docker）
 
 ```bash
-bash packaging/macos/build_app.sh        # 约十几分钟，输出 ~/AhamVoice-build/
+git clone https://github.com/kaka86mm/titanvault-minutes.git && cd titanvault-minutes
+cp .env.example .env          # 填密码 + LLM Key
+docker compose up -d          # 首次自动下载 ~4GB 模型
 ```
 
-内置 CPython(arm64) + 全部依赖 + 5 个模型 + 静态化 ffmpeg，ad-hoc 签名。**仅 Apple Silicon**。
-装到别的 Mac 后首次运行需解除隔离：
+浏览器打开 `http://<服务器IP>:8765`，手机/平板同 Wi-Fi 也能访问。
+
+<details>
+<summary><b>🖥️ GPU 加速</b></summary>
+
+**NVIDIA CUDA**（Linux）：
+```bash
+# docker-compose.yml 改 image: titanvault-minutes:gpu, dockerfile: Dockerfile.gpu
+# 取消 deploy.resources 注释，.env 设 TITANVAULT_ASR_DEVICE=cuda
+```
+
+**AMD ROCm**（gfx1151/Radeon 等）：
+```bash
+docker compose -f docker-compose.yml -f docker-compose.rocm.yml up -d
+```
+
+</details>
+
+<details>
+<summary><b>⚙️ 配置项（.env）</b></summary>
 
 ```bash
-xattr -dr com.apple.quarantine /Applications/AhamVoice.app
+TITANVAULT_ACCESS_PASSWORD=          # 空=裸奔；非空=启用单密码门
+LLM_API_KEY=                         # OpenAI 兼容端点的 Key
+LLM_API_BASE=https://api.deepseek.com
+LLM_MODEL=deepseek-chat
+TITANVAULT_ASR_DEVICE=cpu            # cpu / cuda
 ```
 
-（或右键 → 打开 → 再点「打开」。）
+</details>
 
-## 热词 txt 导入格式
+<details>
+<summary><b>🔧 ASR 引擎切换（FunASR / MOSS）</b></summary>
 
-`#` 开头与空行忽略；其余每行是一个热词，两种写法：
+默认使用 **FunASR**（Paraformer + VAD + 标点 + CAM++ 说话人分离），开箱即用。
 
-- 纯词：`帕萨思`
-- 扩展（英文逗号分隔，最多 4 段）：`词,别名(多个用分号;隔),类型,权重`
-  例：`金蝶接口,金蝶API;金蝶系统,产品,9`
+可选切换到 **[MOSS-Transcribe-Diarize](https://huggingface.co/OpenMOSS-Team/MOSS-Transcribe-Diarize)**（复旦 OpenMOSS，0.9B 端到端转写+说话人分离，INTERSPEECH 2026 MLC-SLM 冠军）：
 
-`词` 必填，其余可选（默认 类型=术语、权重=8）。已存在的词（不区分大小写）与文件内重复项自动跳过。
+| | FunASR（默认） | MOSS |
+|---|---|---|
+| **转写+分离** | 两步：Paraformer ASR + CAM++ 聚类 | 一步端到端，不存在对齐问题 |
+| **长音频** | 分块处理，说话人标签可能跨块不一致 | 单次推理 90 分钟，说话人全局一致 |
+| **声纹匹配** | CAM++ 精确，分数高 | 合并段 + 兜底阈值 + 排除法 |
+| **热词** | 声学层硬约束 | prompt 软引导 + 后置替换 |
+| **情绪分析** | ✅ emotion2vec | ✅ emotion2vec（引擎无关） |
+| **GPU 显存** | ~4GB | ~6.4GB（需 SDPA/Efficient Attention） |
 
-## 主要 API
+**启用 MOSS**（仅 ROCm Docker）：
 
-| 路由 | 用途 |
+```bash
+# 1. 构建镜像（装 MOSS helper 包）
+docker compose -f docker-compose.rocm.yml build --build-arg BUILD_MOSS=1
+
+# 2. 下载模型到挂载目录
+# 从 HuggingFace 下载 OpenMOSS-Team/MOSS-Transcribe-Diarize 到 ./models/moss-transcribe-diarize/
+
+# 3. .env 切换引擎
+echo "TITANVAULT_ASR_ENGINE=moss" >> .env
+# ROCm Efficient Attention（MOSS 长音频必需，防 OOM）
+echo "TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1" >> .env
+
+docker compose -f docker-compose.rocm.yml up -d
+```
+
+</details>
+
+<details>
+<summary><b>🏗️ 架构</b></summary>
+
+```
+backend/app/
+├── main.py            # FastAPI + 路由 + 静态托管
+├── config.py          # 路径/env/LLM 配置
+├── db.py              # SQLite + schema + 中断恢复
+├── security.py        # 单密码门
+├── asr.py             # ASR 转写（枢纽）：FunASR 默认 / MOSS 可选 (TITANVAULT_ASR_ENGINE)
+├── hotwords.py        # 热词双轨系统
+├── hotword_discover.py # 热词 LLM 智能发现
+├── voiceprint.py      # 声纹多采样匹配
+├── emotion.py         # emotion2vec + LLM 情绪
+├── summary.py         # 纪要 map-reduce + 改写
+└── deepseek.py        # LLM 传输层
+```
+
+</details>
+
+<details>
+<summary><b>🔧 本地开发</b></summary>
+
+```bash
+# 后端
+python -m venv .venv && source .venv/bin/activate
+pip install -r backend/requirements.txt
+TITANVAULT_HOME=/tmp/aham-dev python -m uvicorn backend.app.main:app --port 8765 --reload
+
+# 前端（另一个终端）
+cd frontend-src && npm install && npm run dev   # Vite 5174
+
+# 测试
+python -m pytest backend/tests/ -v
+```
+
+</details>
+
+### 三平台分工
+
+| 平台 | 方案 | GPU |
+|---|---|---|
+| **Mac** | 本项目一键脚本（`./start-mac.sh`）| MPS ✅ |
+| **Linux** | 本项目 Docker | CUDA / ROCm / CPU |
+| **Windows** | 本项目 Docker | CPU |
+
+---
+
+<a id="english"></a>
+
+## English
+
+> Forked from [aham-voice](https://github.com/li599198347-svg/aham-voice) (MIT, original archived).
+
+### Why
+
+Most transcription tools are cloud services: you upload audio to someone else's server, and get back unstructured plain text without speaker labels. Local tools usually stop at "here's some text."
+
+**TitanVault Minutes** completes the entire pipeline on your own server — transcription, speaker diarization, and acoustic emotion all run locally with GPU acceleration. Only the meeting summary goes to your LLM. Audio and data never leave your machine.
+
+### What's different from the original
+
+This project is forked from [aham-voice](https://github.com/li599198347-svg/aham-voice) (a macOS desktop app, MIT). The core transcription / voiceprint / summary / emotion pipeline is preserved as-is — **what we rebuilt is the form, platform, extensibility, and engineering structure**:
+
+| Dimension | Original aham-voice | This project titanvault-minutes |
+|---|---|---|
+| 🖥️ **Form** | macOS desktop app (pywebview, packaged `.app`) | **Web app** — browser access, phone/tablet on same Wi-Fi |
+| 💻 **Platform / GPU** | macOS only · MPS | **Linux + Windows** · CUDA / **ROCm (AMD)** / CPU; **Mac native MPS** |
+| 🤖 **LLM** | Hard-coded DeepSeek | **Any OpenAI-compatible endpoint** (DeepSeek / Qwen / Kimi / Ollama / vLLM) |
+| 🏷️ **Hotwords** | Manual entry / txt import only | + **Smart LLM discovery**: auto-extract candidates post-transcription → batch review |
+| 📝 **Summaries** | Template + revision | + **Glossary injection**, **smart chunking**, **timestamp seek to audio**, **docx export** |
+| 🔐 **Access control** | Multi-user system (users / sessions / teams / roles) | **Single password gate** (removed multi-user dead code, enough for LAN sharing) |
+| 📦 **Deployment** | Manual `.app` packaging | **`docker compose up -d`** one-command, with auto model download |
+| 🧩 **Code structure** | Single `main.py` 5000+ lines | **Split into 13 focused modules** (asr / hotwords / voiceprint / summary / emotion …) |
+| 🧪 **Tests** | None | **pytest + 74 unit tests** (config / security / hotword discovery / docx / dialect correction, etc.) |
+| 🩺 **Robustness** | — | Interrupted-task auto-recovery, ffmpeg PATH fallback, sanitized error messages |
+
+> Mac users can use the one-click native script below (MPS GPU acceleration), or Docker (CPU only).
+
+### Key Features
+
+| Feature | Description |
 |---|---|
-| `GET /api/me` | 当前（固定本机）用户 |
-| `GET/PATCH /api/settings` | DeepSeek API Key / 模型 |
-| `GET/POST /api/recordings` | 录音列表 / 上传 |
-| `GET /api/recordings/{id}` | 录音详情（逐字稿/纪要/说话人/情绪） |
-| `POST /api/recordings/{id}/summarize` | DeepSeek 生成纪要 |
-| `POST /api/recordings/{id}/summary/revise` | 按自然语言重写纪要 |
-| `POST /api/recordings/{id}/emotion` | 情绪语义分析 |
-| `GET/POST/PATCH/DELETE /api/hotwords` | 热词增删改查 |
-| `POST /api/hotwords/import` | 从 txt 批量导入热词 |
-| `GET/POST/PATCH /api/voiceprints` | 声纹管理 |
+| 🔒 **Privacy-first** | Transcription/diarization/emotion all local — audio never uploaded |
+| ⚡ **GPU accelerated** | AMD ROCm / NVIDIA CUDA / CPU — 21-min audio in 30 seconds |
+| 🤖 **Any LLM** | Summaries via OpenAI-compatible endpoint — DeepSeek / Qwen / Kimi / Ollama / vLLM |
+| 🏷️ **Smart hotword discovery** | LLM auto-extracts domain terms post-transcription, batch review |
+| 📝 **Structured summaries** | Smart meeting-type detection + smart chunking + glossary injection for consistent terminology |
+| 🌐 **Dialect correction** | LLM fixes tonal-dialect misrecognitions (Guizhou/Sichuan etc.) post-transcription (~80% correction rate) |
+| 🔗 **Timestamp seek** | Click any timestamp in the summary to jump to that audio moment |
+| 📄 **Word export** | Export summaries as .docx (de facto format in CN) or Markdown |
+| 💬 **IM integration** | API Token for Feishu/Hermes agents — send audio, get summary back |
+| 🗣️ **Speaker diarization** | CAM++ voiceprints, per-utterance speaker labels, manageable profiles |
+| 🎭 **Dual-layer emotion** | emotion2vec acoustic + LLM semantic analysis |
+| 🔧 **Dual ASR engine** | Default FunASR (Paraformer+CAM++); optional [MOSS-Transcribe-Diarize](https://huggingface.co/OpenMOSS-Team/MOSS-Transcribe-Diarize) (0.9B end-to-end, INTERSPEECH 2026 champion, 90-min long-form audio) |
+| 🐳 **One-command deploy** | Docker image, `docker compose up -d` and you're running |
 
-完整路由见 `backend/app/main.py` 里的 `@app.` 装饰器。
+### Quick Start
+
+#### Mac (native MPS acceleration, one-click)
+
+```bash
+git clone https://github.com/kaka86mm/titanvault-minutes.git
+cd titanvault-minutes
+cp .env.example .env          # Set LLM key (for summaries)
+./start-mac.sh                # First run: auto-installs deps + models (~5-10 min)
+```
+
+The script auto-checks environment, installs ffmpeg, creates venv, installs deps, and launches with MPS GPU acceleration. Subsequent runs: just `./start-mac.sh`.
+
+Open `http://localhost:8765`.
+
+#### Linux / Windows (Docker)
+
+```bash
+git clone https://github.com/kaka86mm/titanvault-minutes.git && cd titanvault-minutes
+cp .env.example .env          # Set password + LLM key
+docker compose up -d          # Auto-downloads ~4GB models on first run
+```
+
+Open `http://<server-ip>:8765` in your browser. Phones/tablets on the same Wi-Fi can access it too.
+
+<details>
+<summary><b>🖥️ GPU Acceleration</b></summary>
+
+**NVIDIA CUDA** (Linux):
+```bash
+# Edit docker-compose.yml: image: titanvault-minutes:gpu, dockerfile: Dockerfile.gpu
+# Uncomment deploy.resources, set TITANVAULT_ASR_DEVICE=cuda in .env
+```
+
+**AMD ROCm** (gfx1151/Radeon etc.):
+```bash
+docker compose -f docker-compose.yml -f docker-compose.rocm.yml up -d
+```
+
+</details>
+
+<details>
+<summary><b>⚙️ Configuration (.env)</b></summary>
+
+```bash
+TITANVAULT_ACCESS_PASSWORD=          # Empty=no gate; set to enable password
+LLM_API_KEY=                         # Your OpenAI-compatible API key
+LLM_API_BASE=https://api.deepseek.com
+LLM_MODEL=deepseek-chat
+TITANVAULT_ASR_DEVICE=cpu            # cpu / cuda
+```
+
+</details>
+
+### License
+
+[MIT](LICENSE) — forked from [aham-voice](https://github.com/li599198347-svg/aham-voice) (MIT)
+
+---
+
+<div align="center">
+
+**把灵光一现，做成能用的 AI 工具。**
+
+*Turn sparks of insight into AI tools that actually work.*
+
+</div>

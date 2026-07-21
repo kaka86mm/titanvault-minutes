@@ -22,17 +22,17 @@ export function Settings() {
   // never returned by the backend, so its field always starts blank.
   useEffect(() => {
     if (settings.data) {
-      setApiBase(settings.data.deepseek_api_base);
-      setModel(settings.data.deepseek_model);
+      setApiBase(settings.data.llm_api_base);
+      setModel(settings.data.llm_model);
     }
   }, [settings.data]);
 
   const save = useMutation({
     mutationFn: () =>
       patchSettings({
-        ...(apiKey.trim() ? { deepseek_api_key: apiKey.trim() } : {}),
-        deepseek_api_base: apiBase.trim(),
-        deepseek_model: model.trim(),
+        ...(apiKey.trim() ? { llm_api_key: apiKey.trim() } : {}),
+        llm_api_base: apiBase.trim(),
+        llm_model: model.trim(),
       }),
     onSuccess: () => {
       setApiKey("");
@@ -47,7 +47,7 @@ export function Settings() {
   });
 
   const clearKey = useMutation({
-    mutationFn: () => patchSettings({ deepseek_api_key: "" }),
+    mutationFn: () => patchSettings({ llm_api_key: "" }),
     onSuccess: () => {
       setApiKey("");
       setInfo("已清除 API Key。纪要相关功能将不可用，转写与声学情绪不受影响。");
@@ -57,13 +57,13 @@ export function Settings() {
     onError: (err) => setError(readApiError(err)),
   });
 
-  const configured = settings.data?.deepseek_configured ?? false;
+  const configured = settings.data?.llm_configured ?? false;
 
   return (
     <div className="page-body">
       <PageHead
         title="设置"
-        subtitle="本地单机运行。转写与声学情绪完全离线；会议纪要与情绪语义分析需要配置云端大模型（DeepSeek）API Key。"
+        subtitle="本地单机运行。转写与声学情绪完全离线；会议纪要与情绪语义分析需要配置云端大模型（OpenAI 兼容）API Key。"
       />
 
       {error && <Diag code="SET_E">{error}</Diag>}
@@ -83,7 +83,7 @@ export function Settings() {
       >
         <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
           <h3 style={{ margin: 0, fontSize: "var(--text-base)", fontWeight: "var(--weight-semibold)" }}>
-            DeepSeek 大模型
+            大模型（OpenAI 兼容）
           </h3>
           <Status tone={configured ? "moss" : "amber"}>
             {configured ? "已配置" : "未配置"}
@@ -91,8 +91,9 @@ export function Settings() {
         </div>
 
         <p className="meta" style={{ margin: 0, fontSize: "var(--text-xs)", color: "var(--fg-subtle)" }}>
-          API Key 只保存在本机（应用数据目录的 config.json），不会上传，也不会在此页回显。
-          前往 platform.deepseek.com 获取自己的 API Key。
+          支持任何 OpenAI Chat Completions 兼容端点：DeepSeek、通义、Kimi、本地 Ollama/vLLM 等。
+          默认 DeepSeek 开箱即用，换别的改下方 API Base 与模型即可。API Key 只保存在本机
+          （config.json），不上传、不回显。
         </p>
 
         <label style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
@@ -108,7 +109,7 @@ export function Settings() {
         </label>
 
         <label style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-          <span className="meta" style={{ fontSize: "var(--text-xs)" }}>API Base（一般无需修改）</span>
+          <span className="meta" style={{ fontSize: "var(--text-xs)" }}>API Base（OpenAI 兼容端点地址）</span>
           <input
             className="field"
             type="text"

@@ -19,7 +19,7 @@ const queryClient = new QueryClient({
 // Keyframe consumed by the small inline Spinner. Lives here so the spinner
 // itself stays styleless.
 const styleEl = document.createElement("style");
-styleEl.textContent = `@keyframes ahamvoice-spin { to { transform: rotate(360deg); } }`;
+styleEl.textContent = `@keyframes tv-spin { to { transform: rotate(360deg); } }`;
 document.head.appendChild(styleEl);
 
 createRoot(document.getElementById("root")!).render(

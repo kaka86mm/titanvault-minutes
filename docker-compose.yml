@@ -1,0 +1,23 @@
+services:
+  titanvault-minutes:
+    # 默认 CPU 版。GPU 用户改 image: titanvault-minutes:gpu + dockerfile: Dockerfile.gpu
+    # 并取消下方 deploy.resources 注释（需 nvidia-container-toolkit）。
+    image: titanvault-minutes:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.cpu
+    ports:
+      - "${AHAMVOICE_PORT:-8765}:${AHAMVOICE_PORT:-8765}"
+    volumes:
+      - ./models:/models      # 4GB 模型，首次启动自动下载
+      - ./data:/data          # SQLite + 录音（用户数据，持久化）
+    env_file: .env
+    restart: unless-stopped   # 崩溃自动拉起
+    # GPU 版（Linux + NVIDIA）取消注释：
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]

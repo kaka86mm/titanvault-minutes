@@ -1,6 +1,7 @@
 import { api, getStoredToken } from "./client";
 import type {
   Hotword,
+  HotwordCandidate,
   HotwordStatus,
   LoginResponse,
   Recording,
@@ -41,7 +42,7 @@ export async function fetchMe(): Promise<User> {
   return data;
 }
 
-// -------- settings (DeepSeek API key) --------
+// -------- settings (OpenAI-compatible LLM endpoint) --------
 
 export async function fetchSettings(): Promise<Settings> {
   const { data } = await api.get<Settings>("/settings");
@@ -49,9 +50,9 @@ export async function fetchSettings(): Promise<Settings> {
 }
 
 export async function patchSettings(payload: Partial<{
-  deepseek_api_key: string;
-  deepseek_api_base: string;
-  deepseek_model: string;
+  llm_api_key: string;
+  llm_api_base: string;
+  llm_model: string;
 }>): Promise<Settings> {
   const { data } = await api.patch<Settings>("/settings", payload);
   return data;
@@ -282,22 +283,51 @@ export function recordingAudioUrl(id: string): string {
   return withToken(`${apiPrefix()}/recordings/${id}/audio`);
 }
 
-export function exportTranscriptUrl(id: string): string {
-  return withToken(`${apiPrefix()}/recordings/${id}/export/transcript.md`);
+export function exportTranscriptUrl(id: string, fmt: "md" | "docx" = "md"): string {
+  return withToken(`${apiPrefix()}/recordings/${id}/export/transcript.md${fmt === "docx" ? "?format=docx" : ""}`);
 }
 
-export function exportSummaryUrl(id: string): string {
-  return withToken(`${apiPrefix()}/recordings/${id}/export/summary.md`);
+export function exportSummaryUrl(id: string, fmt: "md" | "docx" = "md"): string {
+  return withToken(`${apiPrefix()}/recordings/${id}/export/summary.md${fmt === "docx" ? "?format=docx" : ""}`);
 }
 
-export function exportSummaryVersionUrl(id: string, summaryId: string): string {
-  return withToken(`${apiPrefix()}/recordings/${id}/export/summaries/${summaryId}.md`);
+export function exportSummaryVersionUrl(id: string, summaryId: string, fmt: "md" | "docx" = "md"): string {
+  return withToken(`${apiPrefix()}/recordings/${id}/export/summaries/${summaryId}.md${fmt === "docx" ? "?format=docx" : ""}`);
 }
 
-export function exportEmotionUrl(id: string): string {
-  return withToken(`${apiPrefix()}/recordings/${id}/export/emotion.md`);
+export function exportEmotionUrl(id: string, fmt: "md" | "docx" = "md"): string {
+  return withToken(`${apiPrefix()}/recordings/${id}/export/emotion.md${fmt === "docx" ? "?format=docx" : ""}`);
 }
 
 export function segmentAudioUrl(recordingId: string, segmentId: string): string {
   return withToken(`${apiPrefix()}/recordings/${recordingId}/segments/${segmentId}/audio`);
+}
+
+// -------- hotword candidates --------
+
+export async function fetchCandidates(sort?: string): Promise<HotwordCandidate[]> {
+  const { data } = await api.get<HotwordCandidate[]>("/hotwords/candidates", { params: sort ? { sort } : {} });
+  return data;
+}
+
+export async function confirmCandidates(
+  ids: string[],
+  edits?: Record<string, { word?: string; kind?: string }>,
+): Promise<{ confirmed: number }> {
+  const { data } = await api.post("/hotwords/candidates/confirm", { ids, edits: edits || {} });
+  return data;
+}
+
+export async function editCandidate(
+  candidateId: string,
+  word: string,
+  kind: string,
+): Promise<{ id: string; word: string; kind: string }> {
+  const { data } = await api.patch(`/hotwords/candidates/${candidateId}`, { word, kind });
+  return data;
+}
+
+export async function discardCandidates(ids: string[]): Promise<{ discarded: number }> {
+  const { data } = await api.post("/hotwords/candidates/discard", { ids });
+  return data;
 }

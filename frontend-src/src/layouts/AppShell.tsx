@@ -113,7 +113,7 @@ export function AppShell() {
         <div className="app-shell__brand">
           <span className="app-shell__brand-glyph">A</span>
           <span>
-            AhamVoice <em>· 录音转写</em>
+            TitanVault Minutes <em>· 录音转写</em>
           </span>
         </div>
         <nav className="app-shell__sidebar-nav" aria-label="主导航">
